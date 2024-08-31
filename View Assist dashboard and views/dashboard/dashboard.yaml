@@ -2,12 +2,13 @@ button_card_templates:
   variable_template:
     variables:
       assist_group: group.viewassist_satellites
-      var_weather_entity: weather.forecast_home
+      var_weather_entity: weather.home
       use_24_hour_time: false
       default_satellite: |-
-        [[[
+        [[[ try {
           return hass.states[variables.assist_group].attributes.entity_id
-             .find((eid) => hass.states[eid].attributes.type === "view_audio")
+             .find((eid) => hass.states[eid].attributes.type === "view_audio");
+          } catch { return  ""}
         ]]]      
       var_current_time: |
         [[[
@@ -16,22 +17,25 @@ button_card_templates:
           } else {
             var options = { hour: "numeric", minute: "2-digit" };      
           }
-            return new Date().toLocaleTimeString([], options).replace("AM","").replace("PM","").replace("am","").replace("pm","");
+          try {return new Date().toLocaleTimeString([], options).replace("AM","").replace("PM","").replace("am","").replace("pm","");} catch { return  ""}
         ]]]
       var_date_short: |
         [[[    
           const options = { weekday: "short", month: "short", day: "numeric", };
-          return new Date().toLocaleDateString([], options);
+          try {return new Date().toLocaleDateString([], options);} catch { return  ""}  
         ]]]
       var_date_long: |
         [[[
               const options = { weekday: "long", month: "long", day: "numeric", year: 'numeric' };
-              return new Date().toLocaleDateString([], options)
+              try {return new Date().toLocaleDateString([], options)} catch { return  ""}
         ]]]
       var_assistsat_entity: |-
         [[[
-          return hass.states[variables.assist_group].attributes.entity_id
+          try {
+            return hass.states[variables.assist_group].attributes.entity_id
              .find((eid) => hass.states[eid].attributes.browser_id === localStorage.getItem("browser_mod-browser-id")) ?? variables.default_satellite;
+            } catch { return  ""}
+          
         ]]]
       var_assisting: |-
         [[[
@@ -40,7 +44,7 @@ button_card_templates:
           var micdevice = hass.states[assistbid].attributes.mic_device;
           var micstate = hass.states[micdevice].state;
           var assisting = micstate.includes("start");
-          return `${assisting}`
+          try {return `${assisting}`;} catch { return  ""}
         ]]]
       var_mic_device: |-
         [[[
@@ -48,7 +52,7 @@ button_card_templates:
            .find((eid) => hass.states[eid].attributes.browser_id === localStorage.getItem("browser_mod-browser-id")) ?? variables.default_satellite;
           var micdevice = hass.states[assistbid].attributes.mic_device;
           var micdevice = micdevice.replace("sensor","switch").replace("stt","mic");      
-          return `${micdevice}`
+          try {return `${micdevice}`;} catch { return  ""}
         ]]]
       var_mic_mute: |-
         [[[
@@ -57,7 +61,7 @@ button_card_templates:
           var micdevice = hass.states[assistbid].attributes.mic_device;
           var micdevice = micdevice.replace("sensor","switch").replace("stt","mic");      
           var micstate = hass.states[micdevice].state;
-          return `${micstate}`
+          try {return `${micstate}`;} catch { return  ""}
         ]]]
       var_mic_switch: |-
         [[[
@@ -65,14 +69,14 @@ button_card_templates:
            .find((eid) => hass.states[eid].attributes.browser_id === localStorage.getItem("browser_mod-browser-id")) ?? variables.default_satellite;
           var micdevice = hass.states[assistbid].attributes.mic_device;
           var micswitch = micdevice.replace("sensor","switch").replace("stt","mic");      
-          return `${micswitch}`
+          try {return `${micswitch}`;} catch { return  ""}
         ]]]        
       var_mediaplayer_device: |-
         [[[
           var assistbid = hass.states[variables.assist_group].attributes.entity_id
            .find((eid) => hass.states[eid].attributes.browser_id === localStorage.getItem("browser_mod-browser-id")) ?? variables.default_satellite;
           var mediadevice = hass.states[assistbid].attributes.mediaplayer_device;
-          return `${mediadevice}`
+          try {return `${mediadevice}`;} catch { return  ""}
         ]]]        
       var_mediaplayer_mute: |-
         [[[
@@ -80,19 +84,29 @@ button_card_templates:
            .find((eid) => hass.states[eid].attributes.browser_id === localStorage.getItem("browser_mod-browser-id")) ?? variables.default_satellite;
           var mediadevice = hass.states[assistbid].attributes.mediaplayer_device;
           var mediaplayerstate = hass.states[mediadevice].attributes.is_volume_muted;
-          return `${mediaplayerstate}`
+          try {return `${mediaplayerstate}`;} catch { return  ""}
         ]]]
-      var_title: '[[[ return states[variables.var_assistsat_entity].attributes.title; ]]]'
+      var_title: >-
+        [[[ try {return
+        states[variables.var_assistsat_entity].attributes.title;} catch {
+        return  ""} ]]]
       var_message: >-
-        [[[ return states[variables.var_assistsat_entity].attributes.message;
-        ]]]
-      var_image: '[[[ return states[variables.var_assistsat_entity].attributes.image; ]]]'
+        [[[ try {return
+        states[variables.var_assistsat_entity].attributes.message;} catch {
+        return  ""} ]]]
+      var_image: >-
+        [[[ try {return
+        states[variables.var_assistsat_entity].attributes.image;} catch {
+        return  ""} ]]]
       var_font_size: >-
-        [[[ return
-        states[variables.var_assistsat_entity].attributes.message_font_size; ]]]
-      var_weather_temperature: |-
-        [[[
-          return (states[variables.var_weather_entity].attributes.temperature  + '°');  
+        [[[ try {return
+        states[variables.var_assistsat_entity].attributes.message_font_size;}
+        catch { return  ""} ]]]
+      var_weather_temperature: >-
+        [[[ try {return
+        (states[variables.var_weather_entity].attributes.temperature  + '°');}
+        catch { return  ""}
+
         ]]]      
       var_weather_icon: |-
         [[[
@@ -137,7 +151,7 @@ button_card_templates:
           if (typeof(weather_icon) === 'undefined') { 
             var weather_icon = "mdi:help" 
           }   
-          return `${weather_icon}` 
+          try {return `${weather_icon}`;} catch { return  ""} 
         ]]]
   body_template:
     show_state: false
@@ -208,6 +222,7 @@ button_card_templates:
           - animation: >-
               [[[ if (variables.var_assisting == "true") return "pulse 2s
               infinite"; else return "" ]]]
+          - height: 10px
     extra_styles: |
       @keyframes pulse {
         0%, 100% {
@@ -226,9 +241,9 @@ button_card_templates:
           styles:
             grid:
               - grid-template-areas: |
-                  "mediaplayer mic hold dnd"
+                  "mediaplayer mic hold dnd washer"
               - grid-template-rows: min-content
-              - grid-template-columns: 1fr 1fr 1fr 1fr
+              - grid-template-columns: 1fr 1fr 1fr 1fr 1fr
             card:
               - background-color: transparent
               - border-width: 0px
@@ -257,6 +272,11 @@ button_card_templates:
                     (hass.states[variables.var_assistsat_entity].attributes.do_not_disturb
                     === true) return "block"; else return "none";
                     ]]]                                
+              washer:
+                - position: relative
+                - display: >-
+                    [[[ if (states["input_boolean.washer_attention"].state ==
+                    'on') return "block"; else return "none"; ]]]
           custom_fields:
             mediaplayer:
               card:
@@ -333,5 +353,31 @@ button_card_templates:
                   service_data:
                     do_not_disturb: false
                     entity_id: '[[[ return variables.var_assistsat_entity ]]]'
+            washer:
+              card:
+                type: custom:button-card
+                show_name: true
+                color_type: card
+                styles:
+                  card:
+                    - background-color: transparent
+                    - border-width: 0px
+                name: |
+                  [[[
+                    var last_changed_in_minutes = ((new Date().getTime() - new Date(states["input_boolean.washer_attention"].last_changed).getTime())/60000).toFixed(0);  
+                    var days = Math.floor(last_changed_in_minutes / 1440);
+                    var hours = Math.floor((last_changed_in_minutes - days * 1440) / 60); 
+                    var minutes = last_changed_in_minutes - days * 1440 - hours * 60;
+                    var elapsed = "";
+                    if (last_changed_in_minutes < 1){elapsed = "Wash finished";}
+                    if (last_changed_in_minutes < 60){elapsed = last_changed_in_minutes + " mins";}
+                    if (last_changed_in_minutes >= 60 && last_changed_in_minutes < 1440 ) {elapsed = hours + " hr " + minutes + " min"; }
+                    return `<ha-icon icon="mdi:washing-machine" style="width: 50px; height: 50px; color: white;"></ha-icon><font color="white"><span>${elapsed}</span></font>`;                 
+                  ]]]                
+                tap_action:
+                  action: call-service
+                  service: homeassistant.turn_off
+                  service_data:
+                    entity_id: input_boolean.washer_attention
 views:
   - title: Home
