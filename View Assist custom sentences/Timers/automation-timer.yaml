@@ -1,0 +1,42 @@
+alias: View Assist - Timer
+description: ""
+trigger:
+  - platform: conversation
+    command:
+      - set a timer for {duration} seconds
+    id: settimer
+  - platform: event
+    event_type: viewassist
+    id: timerevent
+condition: []
+action:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id:
+              - settimer
+        sequence:
+          - variables:
+              duration: "{{ trigger.slots.duration | int }}"
+              end_time: >-
+                {{ (now() + timedelta(seconds=duration)).strftime('%Y-%m-%d
+                %H:%M:%S') }}
+          - set_conversation_response: Timer set for {{ duration }} seconds.  set for {{ end_time  }}
+          - data:
+              event_name: viewassist
+              event_data:
+                viewassist_device: sensor.viewassist_kitchen
+                timer_name: VA test
+              target_time: "{{ end_time }}"
+            action: pyscript.schedule_event_at_time
+      - conditions:
+          - condition: trigger
+            id:
+              - timerevent
+        sequence:
+          - action: light.toggle
+            metadata: {}
+            data: {}
+            target:
+              entity_id: light.gateway_light_34ce0088d611
+mode: parallel
