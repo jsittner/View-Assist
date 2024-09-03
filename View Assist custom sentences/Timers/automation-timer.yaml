@@ -21,11 +21,23 @@ action:
               end_time: >-
                 {{ (now() + timedelta(seconds=duration)).strftime('%Y-%m-%d
                 %H:%M:%S') }}
-          - set_conversation_response: Timer set for {{ duration }} seconds.  set for {{ end_time  }}
+              group_entity: group.viewassist_satellites
+              target_satellite_device: |-
+                {% for sat in expand(group_entity) %}
+                  {% if (device_id(sat.attributes.mic_device)  == trigger.device_id) or (device_id(sat.attributes.display_device)  == trigger.device_id) %}
+                    {{ sat.entity_id }}
+                  {% endif %}
+                {% endfor %}
+              target_display_device: >-
+                {{ device_id(state_attr(target_satellite_device,
+                'display_device')) }}
+              target_mediaplayer_device: "{{ state_attr(target_satellite_device, 'mediaplayer_device') }}"
+          - set_conversation_response: Timer set for {{ duration }} seconds
           - data:
               event_name: viewassist
               event_data:
-                viewassist_device: sensor.viewassist_kitchen
+                target_satellite_device: "{{ target_satellite_device }}"
+                target_mediaplayer_device: "{{ target_mediaplayer_device }}"
                 timer_name: VA test
               target_time: "{{ end_time }}"
             action: pyscript.schedule_event_at_time
@@ -34,9 +46,10 @@ action:
             id:
               - timerevent
         sequence:
-          - action: light.toggle
+          - action: tts.google_translate_say
             metadata: {}
-            data: {}
-            target:
-              entity_id: light.gateway_light_34ce0088d611
+            data:
+              cache: false
+              message: Your timer has finished
+              entity_id: "{{ trigger.event.data.target_mediaplayer_device }}"
 mode: parallel
