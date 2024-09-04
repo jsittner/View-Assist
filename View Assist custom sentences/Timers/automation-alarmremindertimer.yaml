@@ -14,7 +14,7 @@ trigger:
       - >-
         remind me to {reminder} in {when} | set a reminder to {reminder} in
         {when} | remind me in {when} to {reminder}
-      - set a {name} timer for {when}
+      - set (a|an) {name} timer for {when}
     id: setalarm
   - platform: state
     entity_id:
