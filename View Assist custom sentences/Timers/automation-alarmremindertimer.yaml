@@ -66,7 +66,9 @@ action:
             enabled: true
           - if:
               - condition: template
-                value_template: "{{ trigger.slots.reminder is defined}}"
+                value_template: >-
+                  {{ (trigger.slots.reminder is defined) or (trigger.slots.name
+                  is defined) }}
             then:
               - if:
                   - condition: template
@@ -74,6 +76,8 @@ action:
                 then:
                   - variables:
                       time_values:
+                        second: 1
+                        seconds: 1
                         minute: 60
                         minutes: 60
                         hour: 3600
@@ -97,36 +101,43 @@ action:
                         {{ (now() +
                         timedelta(seconds=time_start)).strftime('%Y-%m-%d
                         %H:%M:%S') }}
-                      reminder: "{{ trigger.slots.reminder }}"
+                      alarm_id: >-
+                        {% if trigger.slots.reminder is defined %}{{
+                        trigger.slots.reminder }}{% else %}{{ trigger.slots.name
+                        }}{% endif %}
                   - data:
                       event_name: viewassist
                       event_data:
                         timer_status: expired
-                        alarm_type: reminder
+                        alarm_type: >-
+                          {% if trigger.slots.reminder is defined %}Reminder{%
+                          else %}Timer{% endif %}
                         target_satellite_device: "{{ target_satellite_device }}"
                         target_mediaplayer_device: "{{ target_mediaplayer_device }}"
                         target_display_device: "{{ target_display_device }}"
-                        reminder: "{{ reminder }}"
+                        alarm_id: "{{ alarm_id }}"
                       target_time: "{{ alarm_time }}"
                     action: pyscript.schedule_event_at_time
                   - set_conversation_response: >-
-                      I'll remind you to {{trigger.slots.reminder}} in
-                      {{trigger.slots.when}}
+                      {% if trigger.slots.reminder is defined %}I'll remind you
+                      to {{trigger.slots.reminder}} in {{trigger.slots.when}}{%
+                      else %}Starting your {{trigger.slots.when}} timer{% endif
+                      %}
                 else:
                   - variables:
                       alarm_time: >-
                         {{strptime(today_at().date() ~ ' ' ~ trigger.slots.time,
                         '%Y-%m-%d %I:%M %p')}}
-                      reminder: "{{ trigger.slots.reminder }}"
+                      alarm_id: "{{ trigger.slots.reminder }}"
                   - data:
                       event_name: viewassist
                       event_data:
                         timer_status: expired
-                        alarm_type: reminder
+                        alarm_type: Reminder
                         target_satellite_device: "{{ target_satellite_device }}"
                         target_mediaplayer_device: "{{ target_mediaplayer_device }}"
                         target_display_device: "{{ target_display_device }}"
-                        reminder: "{{ reminder }}"
+                        alarm_id: "{{ trigger.slots.reminder }}"
                       target_time: "{{ alarm_time }}"
                     action: pyscript.schedule_event_at_time
                   - set_conversation_response: >-
@@ -141,11 +152,11 @@ action:
                   event_name: viewassist
                   event_data:
                     timer_status: expired
-                    alarm_type: alarm
+                    alarm_type: Alarm
                     target_satellite_device: "{{ target_satellite_device }}"
                     target_mediaplayer_device: "{{ target_mediaplayer_device }}"
                     target_display_device: "{{ target_display_device }}"
-                    reminder: "{{ reminder }}"
+                    alarm_id: "{{ alarm_time }}"
                   target_time: "{{ alarm_time }}"
                 action: pyscript.schedule_event_at_time
               - set_conversation_response: Alarm set for {{trigger.slots.time}}
