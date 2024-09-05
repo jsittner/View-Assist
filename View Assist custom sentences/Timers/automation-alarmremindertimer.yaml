@@ -44,7 +44,6 @@ condition: []
 action:
   - variables:
       group_entity: group.viewassist_satellites
-      calendar_entity: calendar.viewassist
       alarmsound_path: http://192.168.0.25:8123/local/viewassist/alarm1.mp3
       view: /dashboard-viewassist/alarm
   - choose:
