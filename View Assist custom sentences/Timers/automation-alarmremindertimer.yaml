@@ -46,6 +46,7 @@ action:
       group_entity: group.viewassist_satellites
       alarmsound_path: http://192.168.0.25:8123/local/viewassist/alarm1.mp3
       view: /dashboard-viewassist/alarm
+      snooze_time: 1
   - choose:
       - conditions:
           - condition: trigger
@@ -247,17 +248,21 @@ action:
                 value_template: "{{ trigger.event.data.service_data.alarm == \"snooze\" }}"
             then:
               - variables:
-                  snooze_time: 1
                   snooze_begin: "{{ now() + timedelta(minutes=snooze_time) }}"
                   start_date_time: >-
                     {{ (snooze_begin|as_datetime).strftime('%Y-%m-%d %H:%M:%S')
                     }}
-                  end_date_time: >-
+                  alarm_time: >-
                     {{ (snooze_begin|as_datetime +
                     timedelta(minutes=1)).strftime('%Y-%m-%d %H:%M:%S') }}
                   target_satellite_device: "{{ trigger.event.data.service_data.entity_id }}"
-                  alarm_type: "{{ state_attr(target_satellite_device, 'alarm_type') }}"
-                  reminder: "{{ state_attr(target_satellite_device, 'reminder') }}"
+                  target_display_device: >-
+                    {{ device_id(state_attr(target_satellite_device,
+                    'display_device')) }}
+                  target_mediaplayer_device: >-
+                    {{ state_attr(target_satellite_device, 'mediaplayer_device')
+                    }}
+                  alarm_id: "{{ state_attr(target_satellite_device, 'alarm_id') }}"
               - data:
                   entity_id: "{{ target_satellite_device }}"
                   alarm: idle
@@ -272,6 +277,17 @@ action:
                     }}
                   start_date_time: "{{ start_date_time }}"
                   end_date_time: "{{ end_date_time }}"
-                enabled: true
+                enabled: false
                 action: calendar.create_event
+              - data:
+                  event_name: viewassist
+                  event_data:
+                    timer_status: expired
+                    alarm_type: Alarm
+                    target_satellite_device: "{{ target_satellite_device }}"
+                    target_mediaplayer_device: "{{ target_mediaplayer_device }}"
+                    target_display_device: "{{ target_display_device }}"
+                    alarm_id: "{{ alarm_id }}"
+                  target_time: "{{ alarm_time }}"
+                action: pyscript.schedule_event_at_time
 mode: single
