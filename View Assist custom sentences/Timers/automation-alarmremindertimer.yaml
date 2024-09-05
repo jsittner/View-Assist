@@ -4,6 +4,7 @@ trigger:
   - platform: conversation
     command:
       - Set an alarm for {time}
+      - set a timer for {when}
     id: setalarm
   - platform: conversation
     command:
@@ -68,7 +69,7 @@ action:
               - condition: template
                 value_template: >-
                   {{ (trigger.slots.reminder is defined) or (trigger.slots.name
-                  is defined) }}
+                  is defined) or ('Set a timer' in trigger.sentence)}}
             then:
               - if:
                   - condition: template
@@ -103,8 +104,9 @@ action:
                         %H:%M:%S') }}
                       alarm_id: >-
                         {% if trigger.slots.reminder is defined %}{{
-                        trigger.slots.reminder }}{% else %}{{ trigger.slots.name
-                        }}{% endif %}
+                        trigger.slots.reminder }}{% elif trigger.slots.name is
+                        defined %}{{ trigger.slots.name }}{% else %}{{
+                        alarm_time }}{% endif %}
                   - data:
                       event_name: viewassist
                       event_data:
@@ -123,6 +125,11 @@ action:
                       to {{trigger.slots.reminder}} in {{trigger.slots.when}}{%
                       else %}Starting your {{trigger.slots.when}} timer{% endif
                       %}
+                  - data:
+                      entity_id: "{{ target_satellite_device }}"
+                      alarm_id: "{{ alarm_id }}"
+                      alarm_type: "{{ alarm_type }}"
+                    action: python_script.set_state
                 else:
                   - variables:
                       alarm_time: >-
@@ -231,12 +238,6 @@ action:
               entity_id: "{{ target_timer_device }}"
             data: {}
           - set_conversation_response: ""
-          - data:
-              entity_id: "{{ target_satellite_device }}"
-              alarm: idle
-              mode: normal
-              reminder: ""
-            action: python_script.set_state
       - conditions:
           - condition: trigger
             id:
