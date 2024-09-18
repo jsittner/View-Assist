@@ -64,6 +64,9 @@ action:
                 {{ device_id(state_attr(target_satellite_device,
                 'display_device')) }}
               target_mediaplayer_device: "{{ state_attr(target_satellite_device, 'mediaplayer_device') }}"
+              unique_id: >-
+                {% set unique_id = now().timestamp() | int | string +
+                (range(100, 999) | random | string) %}{{ unique_id }}
             enabled: true
           - if:
               - condition: template
@@ -110,6 +113,7 @@ action:
                   - data:
                       event_name: viewassist
                       event_data:
+                        unique_id: "{{ unique_id }}"
                         timer_status: expired
                         alarm_type: >-
                           {% if trigger.slots.reminder is defined %}Reminder{%
@@ -129,6 +133,22 @@ action:
                       entity_id: "{{ target_satellite_device }}"
                       alarm_id: "{{ alarm_id | capitalize }}"
                       alarm_type: "{{ alarm_type }}"
+                      timer_list:
+                        "{{ alarm_time }}":
+                          timer_id: "{{ alarm_id | capitalize}}"
+                    action: python_script.set_state
+                    enabled: false
+                  - data:
+                      entity_id: "{{ target_satellite_device }}"
+                      alarm_id: "{{ alarm_id | capitalize }}"
+                      alarm_type: "{{ alarm_type }}"
+                      timer_list:
+                        "{{ unique_id }}":
+                          timer_id: "{{ alarm_id | capitalize}}"
+                          target_satellite_device: "{{ target_satellite_device }}"
+                          target_mediaplayer_device: "{{ target_mediaplayer_device }}"
+                          target_display_device: "{{ target_display_device }}"
+                          target_time: "{{ alarm_time }}"
                     action: python_script.set_state
                 else:
                   - variables:
@@ -139,6 +159,7 @@ action:
                   - data:
                       event_name: viewassist
                       event_data:
+                        unique_id: "{{ unique_id }}"
                         timer_status: expired
                         alarm_type: Reminder
                         target_satellite_device: "{{ target_satellite_device }}"
@@ -150,6 +171,18 @@ action:
                   - set_conversation_response: >-
                       I'll remind you to {{trigger.slots.reminder}} at
                       {{trigger.slots.time}}
+                  - data:
+                      entity_id: "{{ target_satellite_device }}"
+                      alarm_id: "{{ alarm_id | capitalize }}"
+                      alarm_type: "{{ alarm_type }}"
+                      timer_list:
+                        "{{ unique_id }}":
+                          timer_id: "{{ alarm_id | capitalize}}"
+                          target_satellite_device: "{{ target_satellite_device }}"
+                          target_mediaplayer_device: "{{ target_mediaplayer_device }}"
+                          target_display_device: "{{ target_display_device }}"
+                          target_time: "{{ alarm_time }}"
+                    action: python_script.set_state
             else:
               - variables:
                   alarm_time: >-
@@ -158,6 +191,7 @@ action:
               - data:
                   event_name: viewassist
                   event_data:
+                    unique_id: "{{ unique_id }}"
                     timer_status: expired
                     alarm_type: Alarm
                     target_satellite_device: "{{ target_satellite_device }}"
@@ -167,6 +201,18 @@ action:
                   target_time: "{{ alarm_time }}"
                 action: pyscript.schedule_event_at_time
               - set_conversation_response: Alarm set for {{trigger.slots.time}}
+              - data:
+                  entity_id: "{{ target_satellite_device }}"
+                  alarm_id: "{{ alarm_id | capitalize }}"
+                  alarm_type: "{{ alarm_type }}"
+                  timer_list:
+                    "{{ unique_id }}":
+                      timer_id: "{{ alarm_id | capitalize}}"
+                      target_satellite_device: "{{ target_satellite_device }}"
+                      target_mediaplayer_device: "{{ target_mediaplayer_device }}"
+                      target_display_device: "{{ target_display_device }}"
+                      target_time: "{{ alarm_time }}"
+                action: python_script.set_state
       - conditions:
           - condition: trigger
             id:
