@@ -5,6 +5,10 @@ blueprint:
   description: Ask Assist to locate a person (View Assist locateaperson v 1.0.3)
   domain: automation
   input:
+    command_prompt:
+      name: Command Text
+      description: The phrase you want to use to trigger the automation
+      default: "(locate|map) [my] {person}"  
     view:
       name: View
       description: The View Assist dashboard view to use for map display
