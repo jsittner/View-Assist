@@ -1,129 +1,455 @@
-type: custom:button-card
-variables:
-  background: /local/viewassist/Samples/ziyao-xiong-TSh4_IYjHRc-unsplash.jpg
-  var_alarm_id: |-
-    [[[
-      var assistbid = hass.states[variables.assist_group].attributes.entity_id
-        .find((eid) => hass.states[eid].attributes.browser_id === localStorage.getItem("browser_mod-browser-id")) ?? variables.default_satellite;
-      var alarm_id = hass.states[assistbid].attributes.alarm_name;
-      try {return `${alarm_id}`;} catch { return  ""}
-    ]]] 
-template:
-  - variable_template
-  - body_template
-styles:
-  grid:
-    - grid-template-areas: |
-        "title status"
-        "id id"
-        "time time"
-        "snooze dismiss"
-        "assist assist"
-    - grid-template-rows: .5fr min-content min-content min-content min-content
-    - grid-template-columns: 1fr 1fr
-  card:
-    - background-size: cover
-    - background-color: '#24292c'
-  custom_fields:
-    id:
-      - justify-self: center
-      - z-index: 2
-      - font-size: 10vh
-      - position: grid
-      - color: white
-      - align-content: end
-    time:
-      - justify-self: center
-      - z-index: 2
-      - font-size: 45vh
-      - font-weight: bold
-      - position: grid
-      - color: white
-    snooze:
-      - justify-self: center
-      - align-self: center
-      - z-index: 1
-      - font-size: 15vh
-      - width: max-content
-      - position: grid
-      - top: 70%
-    dismiss:
-      - justify-self: center
-      - align-self: center
-      - z-index: 1
-      - font-size: 15vh
-      - width: max-content
-      - position: grid
-      - top: 70%
-    night:
-      - position: absolute
-      - min-height: 200%
-      - width: 200%
-      - backdrop-filter: brightness(5%)
-      - overflow: hidden
-      - display: >-
-          [[[ if (hass.states[variables.var_assistsat_entity].attributes.mode
-          === "night") return "block"; else return "none"; ]]]      
-      - z-index: 3
-custom_fields:
-  title: ' '
-  id: '[[[ return variables.var_alarm_id ]]]'
-  time: '[[[ return variables.var_current_time ]]]'
-  snooze:
-    card:
-      type: custom:button-card
-      name: Snooze
-      show_icon: false
-      show_name: true
-      tap_action:
-        action: call-service
-        service: python_script.set_state
-        service_data:
-          alarm: snooze
-          mode: normal
-          entity_id: '[[[ return variables.var_assistsat_entity ]]]'
-      styles:
-        card:
-          - display: flex
-          - justify-content: center
-          - align-items: center
-          - width: 30vw
-          - height: 10vh
-          - border-radius: 5vw
-          - border: none
-          - background-color: white
-        name:
-          - font-size: 5vh
-          - color: black
-          - font-weight: bold
-          - text-align: center
-  dismiss:
-    card:
-      type: custom:button-card
-      name: Dismiss
-      show_icon: false
-      show_name: true
-      tap_action:
-        action: call-service
-        service: python_script.set_state
-        service_data:
-          alarm: idle
-          mode: normal
-          entity_id: '[[[ return variables.var_assistsat_entity ]]]'
-      styles:
-        card:
-          - display: flex
-          - justify-content: center
-          - align-items: center
-          - width: 30vw
-          - height: 10vh
-          - border-radius: 5vh
-          - color: white
-          - border: none
-          - background-color: '#2899f3'
-        name:
-          - font-size: 5vh
-          - color: white
-          - font-weight: bold
-          - text-align: center
-  night: .
+alias: View Assist - Alarm Reminder Timer
+description: ""
+trigger:
+  - platform: conversation
+    command:
+      - Set an alarm for {time}
+      - set a timer for {when}
+    id: setalarm
+  - platform: conversation
+    command:
+      - (remind me | set a reminder) to {reminder} at {time}
+    id: setalarm
+  - platform: conversation
+    command:
+      - >-
+        remind me to {reminder} in {when} | set a reminder to {reminder} in
+        {when} | remind me in {when} to {reminder}
+      - set (a|an) {name} timer for {when}
+    id: setalarm
+  - platform: state
+    entity_id:
+      - calendar.viewassist
+    enabled: true
+    to: "on"
+    id: ringalarm
+  - platform: conversation
+    command:
+      - Turn off alarm
+    id: turnoffalarm
+  - platform: event
+    event_type: call_service
+    event_data:
+      domain: python_script
+      service: set_state
+      service_data:
+        alarm: snooze
+    id: snooze
+  - platform: event
+    event_type: viewassist
+    event_data:
+      timer_status: expired
+    id: ringalarm
+  - platform: conversation
+    command:
+      - how much time (is) left on my {name} timer
+    id: timeremaining
+  - platform: conversation
+    command:
+      - cancel my {name} timer
+    id: canceltimer
+  - platform: conversation
+    command:
+      - list my timers
+    id: listtimer
+condition: []
+action:
+  - variables:
+      group_entity: group.viewassist_satellites
+      alarmsound_path: http://192.168.0.25:8123/local/viewassist/alarm1.mp3
+      view: /dashboard-viewassist/alarm
+      snooze_time: 1
+  - choose:
+      - conditions:
+          - condition: trigger
+            id:
+              - setalarm
+        sequence:
+          - variables:
+              target_satellite_device: |-
+                {% for sat in expand(group_entity) %}
+                  {% if (device_id(sat.attributes.mic_device)  == trigger.device_id) or (device_id(sat.attributes.display_device)  == trigger.device_id) %}
+                    {{ sat.entity_id }}
+                  {% endif %}
+                {% endfor %}
+              target_display_device: >-
+                {{ device_id(state_attr(target_satellite_device,
+                'display_device')) }}
+              target_mediaplayer_device: "{{ state_attr(target_satellite_device, 'mediaplayer_device') }}"
+              unique_id: >-
+                {% set unique_id = 'va' + now().timestamp() | int | string +
+                (range(100, 999) | random | string) %}{{ unique_id | string}}
+              old_list: "{{ state_attr(target_satellite_device, 'timer_list') }}"
+            enabled: true
+          - if:
+              - condition: template
+                value_template: >-
+                  {{ (trigger.slots.reminder is defined) or (trigger.slots.name
+                  is defined) or ('Set a timer' in trigger.sentence)}}
+            then:
+              - if:
+                  - condition: template
+                    value_template: "{{ trigger.slots.when is defined}}"
+                then:
+                  - variables:
+                      time_values:
+                        second: 1
+                        seconds: 1
+                        minute: 60
+                        minutes: 60
+                        hour: 3600
+                        hours: 3600
+                      time_words:
+                        one: 1
+                        two: 2
+                        three: 3
+                        four: 4
+                        five: 5
+                        six: 6
+                        seven: 7
+                        eight: 8
+                        nine: 9
+                      time_int: >-
+                        {% set word = (trigger.slots.when).split(' ')[0] %}{{
+                        time_words[word] if word in time_words else word|int}}
+                      time_type: "{{ (trigger.slots.when).split(' ')[1] }}"
+                      time_start: "{{ time_int * time_values[time_type] }}"
+                      alarm_time: >-
+                        {{ (now() +
+                        timedelta(seconds=time_start)).strftime('%Y-%m-%d
+                        %H:%M:%S') }}
+                      alarm_id: >-
+                        {% if trigger.slots.reminder is defined %}{{
+                        trigger.slots.reminder }}{% elif trigger.slots.name is
+                        defined %}{{ trigger.slots.name | lower}}{% else
+                        %}unnamed{% endif %}
+                      timer_list:
+                        - unique_id: "{{ unique_id }}"
+                          alarm_type: "{{ alarm_type }}"
+                          timer_id: "{{ alarm_id | lower }}"
+                          target_satellite_device: "{{ target_satellite_device }}"
+                          target_mediaplayer_device: "{{ target_mediaplayer_device }}"
+                          target_display_device: "{{ target_display_device }}"
+                          target_time: "{{ alarm_time }}"
+                  - data:
+                      event_name: viewassist
+                      event_data:
+                        unique_id: "{{ unique_id }}"
+                        timer_status: expired
+                        alarm_type: >-
+                          {% if trigger.slots.reminder is defined %}Reminder{%
+                          else %}Timer{% endif %}
+                        target_satellite_device: "{{ target_satellite_device }}"
+                        target_mediaplayer_device: "{{ target_mediaplayer_device }}"
+                        target_display_device: "{{ target_display_device }}"
+                        alarm_id: "{{ alarm_id }}"
+                      target_time: "{{ alarm_time }}"
+                    action: pyscript.schedule_event_at_time
+                  - set_conversation_response: >-
+                      {% if trigger.slots.reminder is defined %}I'll remind you
+                      to {{trigger.slots.reminder}} in {{trigger.slots.when}}{%
+                      else %}Starting your {{trigger.slots.when}} timer{% endif
+                      %}
+                  - data:
+                      entity_id: "{{ target_satellite_device }}"
+                      timer_list: "{{ timer_list + old_list }}"
+                    action: python_script.set_state
+                    enabled: true
+                else:
+                  - variables:
+                      alarm_time: >-
+                        {{strptime(today_at().date() ~ ' ' ~ trigger.slots.time,
+                        '%Y-%m-%d %I:%M %p')}}
+                      alarm_id: "{{ trigger.slots.reminder }}"
+                  - data:
+                      event_name: viewassist
+                      event_data:
+                        unique_id: "{{ unique_id }}"
+                        timer_status: expired
+                        alarm_type: Alarm
+                        target_satellite_device: "{{ target_satellite_device }}"
+                        target_mediaplayer_device: "{{ target_mediaplayer_device }}"
+                        target_display_device: "{{ target_display_device }}"
+                        alarm_id: "{{ alarm_id }}"
+                      target_time: "{{ alarm_time }}"
+                    action: pyscript.schedule_event_at_time
+                  - set_conversation_response: >-
+                      I'll remind you to {{trigger.slots.reminder}} at
+                      {{trigger.slots.time}}
+                  - data:
+                      entity_id: "{{ target_satellite_device }}"
+                      alarm_id: "{{ alarm_id | capitalize }}"
+                      alarm_type: "{{ alarm_type }}"
+                      timer_list:
+                        "{{ unique_id }}":
+                          timer_id: "{{ alarm_id | capitalize}}"
+                          target_satellite_device: "{{ target_satellite_device }}"
+                          target_mediaplayer_device: "{{ target_mediaplayer_device }}"
+                          target_display_device: "{{ target_display_device }}"
+                          target_time: "{{ alarm_time }}"
+                    action: python_script.set_state
+            else:
+              - variables:
+                  alarm_time: >-
+                    {{strptime(today_at().date() ~ ' ' ~ trigger.slots.time,
+                    '%Y-%m-%d %I:%M %p')}}
+                  timer_list:
+                    "{{ unique_id }}":
+                      timer_id: "{{ alarm_id | capitalize}}"
+                      target_satellite_device: "{{ target_satellite_device }}"
+                      target_mediaplayer_device: "{{ target_mediaplayer_device }}"
+                      target_display_device: "{{ target_display_device }}"
+                      target_time: "{{ alarm_time }}"
+              - data:
+                  event_name: viewassist
+                  event_data:
+                    unique_id: "{{ unique_id }}"
+                    timer_status: expired
+                    alarm_type: Alarm
+                    target_satellite_device: "{{ target_satellite_device }}"
+                    target_mediaplayer_device: "{{ target_mediaplayer_device }}"
+                    target_display_device: "{{ target_display_device }}"
+                    alarm_id: >-
+                      {{ alarm_time |  as_timestamp |
+                      timestamp_custom('%H:%M')}} Alarm
+                  target_time: "{{ alarm_time }}"
+                action: pyscript.schedule_event_at_time
+              - set_conversation_response: Alarm set for {{trigger.slots.time}}
+              - data:
+                  entity_id: "{{ target_satellite_device }}"
+                  alarm_id: "{{ alarm_id | capitalize }}"
+                  alarm_type: "{{ alarm_type }}"
+                  old_list: "{{ old_list }}"
+                  timer_list: "{{ timer_list }}"
+                action: python_script.set_state
+      - conditions:
+          - condition: trigger
+            id:
+              - ringalarm
+          - condition: template
+            value_template: >-
+              {% if
+              state_attr(trigger.event.data.target_satellite_device,'timer_list')
+              | selectattr('unique_id', 'eq', trigger.event.data.unique_id) |
+              list %}
+
+              true
+
+              {% endif %}
+        sequence:
+          - variables:
+              target_satellite_device: "{{ trigger.event.data.target_satellite_device }}"
+              target_display_device: "{{ trigger.event.data.target_display_device }}"
+              target_mediaplayer_device: "{{ trigger.event.data.target_mediaplayer_device }}"
+              alarm_type: "{{ trigger.event.data.target_alarm_type }}"
+              alarm_name: |-
+                {% if trigger.event.data.alarm_id is defined %}
+                  {{ trigger.event.data.alarm_id }}
+                {% endif %}
+              timer_list: >-
+                {{ state_attr(target_satellite_device,'timer_list') |
+                rejectattr('unique_id', 'eq', trigger.event.data.unique_id) |
+                list }}
+            enabled: true
+          - data:
+              entity_id: "{{ target_satellite_device }}"
+              alarm: alarming
+              mode: hold
+              alarm_type: "{{ alarm_type }}"
+              alarm_name: "{{ alarm_name }}"
+              timer_list: "{{ timer_list }}"
+            action: python_script.set_state
+          - data:
+              path: "{{ view }}"
+            target:
+              device_id: "{{target_display_device}}"
+            action: browser_mod.navigate
+          - repeat:
+              sequence:
+                - data:
+                    media_content_id: "{{ alarmsound_path }}"
+                    media_content_type: music
+                  target:
+                    entity_id: "{{ target_mediaplayer_device }}"
+                  enabled: true
+                  action: media_player.play_media
+                - delay:
+                    seconds: 2
+                - wait_template: "{{ states(target_mediaplayer_device) == 'idle'}}"
+                  continue_on_timeout: true
+                  enabled: true
+              while:
+                - condition: template
+                  value_template: >-
+                    {{ (state_attr(target_satellite_device,'alarm') ==
+                    'alarming') or (state_attr(target_satellite_device,'alarm')
+                    == 'reminding') }}
+      - conditions:
+          - condition: trigger
+            id:
+              - turnoffalarm
+        sequence:
+          - variables:
+              target_satellite_device: "{{state_attr(calendar_entity,'message').split(',')[1]}}"
+              target_display_device: >-
+                {{ device_id (state_attr(target_satellite_device,
+                'display_device')) }}
+              target_mediaplayer_device: "{{state_attr(target_satellite_device, 'mediaplayer_device')}}"
+              target_timer_device: "{{ state_attr(target_satellite_device, 'timer') }}"
+            enabled: true
+          - data:
+              entity_id: "{{ target_satellite_device }}"
+              alarm: idle
+              mode: normal
+              reminder: ""
+            action: python_script.set_state
+          - action: timer.finish
+            target:
+              entity_id: "{{ target_timer_device }}"
+            data: {}
+          - set_conversation_response: ""
+      - conditions:
+          - condition: trigger
+            id:
+              - snooze
+        sequence:
+          - if:
+              - condition: template
+                value_template: "{{ trigger.event.data.service_data.alarm == \"snooze\" }}"
+            then:
+              - variables:
+                  alarm_time: >-
+                    {{ (now()|as_datetime +
+                    timedelta(minutes=snooze_time)).strftime('%Y-%m-%d
+                    %H:%M:%S') }}
+                  target_satellite_device: "{{ trigger.event.data.service_data.entity_id }}"
+                  target_display_device: >-
+                    {{ device_id(state_attr(target_satellite_device,
+                    'display_device')) }}
+                  target_mediaplayer_device: >-
+                    {{ state_attr(target_satellite_device, 'mediaplayer_device')
+                    }}
+                  alarm_id: "{{ state_attr(target_satellite_device, 'alarm_id') }}"
+              - data:
+                  entity_id: "{{ target_satellite_device }}"
+                  alarm: idle
+                  mode: normal
+                  reminder: ""
+                action: python_script.set_state
+              - data:
+                  event_name: viewassist
+                  event_data:
+                    timer_status: expired
+                    alarm_type: Alarm
+                    target_satellite_device: "{{ target_satellite_device }}"
+                    target_mediaplayer_device: "{{ target_mediaplayer_device }}"
+                    target_display_device: "{{ target_display_device }}"
+                    alarm_id: "{{ alarm_id }}"
+                  target_time: "{{ alarm_time }}"
+                action: pyscript.schedule_event_at_time
+      - conditions:
+          - condition: trigger
+            id:
+              - timeremaining
+        sequence:
+          - variables:
+              target_satellite_device: |-
+                {% for sat in expand(group_entity) %}
+                  {% if (device_id(sat.attributes.mic_device)  == trigger.device_id) or (device_id(sat.attributes.display_device)  == trigger.device_id) %}
+                    {{ sat.entity_id }}
+                  {% endif %}
+                {% endfor %}
+              target_display_device: >-
+                {{ device_id(state_attr(target_satellite_device,
+                'display_device')) }}
+              target_mediaplayer_device: "{{ state_attr(target_satellite_device, 'mediaplayer_device') }}"
+              target_time: >-
+                {{state_attr(target_satellite_device,'timer_list') |
+                selectattr('timer_id', 'eq', trigger.slots.name)|
+                map(attribute='target_time') | first }}
+            enabled: true
+          - action: pyscript.get_time_difference
+            data:
+              target_time: "{{ target_time }}"
+            response_variable: time_remaining
+          - set_conversation_response: >-
+              You have {{ time_remaining['time_difference'] }} on your {{
+              trigger.slots.name }} timer
+      - conditions:
+          - condition: trigger
+            id:
+              - canceltimer
+        sequence:
+          - variables:
+              target_satellite_device: |-
+                {% for sat in expand(group_entity) %}
+                  {% if (device_id(sat.attributes.mic_device)  == trigger.device_id) or (device_id(sat.attributes.display_device)  == trigger.device_id) %}
+                    {{ sat.entity_id }}
+                  {% endif %}
+                {% endfor %}
+              target_display_device: >-
+                {{ device_id(state_attr(target_satellite_device,
+                'display_device')) }}
+              target_mediaplayer_device: "{{ state_attr(target_satellite_device, 'mediaplayer_device') }}"
+              unique_id: >-
+                {{state_attr(target_satellite_device,'timer_list') |
+                selectattr('timer_id', 'eq', trigger.slots.name)|
+                map(attribute='unique_id') | first }}
+            enabled: true
+          - if:
+              - condition: template
+                value_template: >-
+                  {% if state_attr(target_satellite_device,'timer_list') |
+                  selectattr('unique_id', 'eq', unique_id) | list %}
+
+                  true
+
+                  {% endif %}
+            then:
+              - variables:
+                  timer_list: >-
+                    {{ state_attr(target_satellite_device,'timer_list') |
+                    rejectattr('unique_id', 'eq', unique_id) | list }}
+                enabled: true
+              - data:
+                  entity_id: "{{ target_satellite_device }}"
+                  timer_list: "{{ timer_list }}"
+                action: python_script.set_state
+              - set_conversation_response: Your {{ trigger.slots.name }} timer has been canceled
+            else:
+              - set_conversation_response: >-
+                  I could not find an active timer called {{ trigger.slots.name
+                  }}
+      - conditions:
+          - condition: trigger
+            id:
+              - listtimer
+        sequence:
+          - variables:
+              target_satellite_device: |-
+                {% for sat in expand(group_entity) %}
+                  {% if (device_id(sat.attributes.mic_device)  == trigger.device_id) or (device_id(sat.attributes.display_device)  == trigger.device_id) %}
+                    {{ sat.entity_id }}
+                  {% endif %}
+                {% endfor %}
+              target_display_device: >-
+                {{ device_id(state_attr(target_satellite_device,
+                'display_device')) }}
+              target_mediaplayer_device: "{{ state_attr(target_satellite_device, 'mediaplayer_device') }}"
+            enabled: true
+          - set_conversation_response: >
+              {% set timers = state_attr(target_satellite_device, 'timer_list')
+              %}
+
+              {% set timer_count = timers | length %}
+
+              {% if timer_count == 0 %}
+                You have no active timers.
+              {% elif timer_count == 1 %}
+                You have 1 active timer and it is called {{ timers[0].timer_id }}.
+              {% else %}
+                {% set timer_names = timers | map(attribute='timer_id') | list %}
+                {% set last_timer = timer_names.pop() %}
+                You have {{ timer_count }} active timers and they are {{ timer_names | join(', ') }} and {{ last_timer }}.
+              {% endif %}
+mode: single
