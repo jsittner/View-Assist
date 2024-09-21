@@ -30,13 +30,13 @@ blueprint:
       description: >-
         The phonetic name followed by the home assistant name (example
         '{"john":"jon","simon":"simon"}' )
-      default: '{"work":"123 Main Street, Beverly Hills, CA 90210","the white house":"1600 Pennsylvania Avenue NW, Washington, DC 20500"}'
-    person_names: "{{ input_person_names | from_json}}"
+      default: '{"john":"jon","simon":"simon"}'
 alias: View Assist - Spell a Word
 description: "Ask Assist to locate a person"
 variables:
   group_entity: group.viewassist_satellites
   dashboard: /dashboard-viewassist/map
+  person_names: "{{ input_person_names | from_json}}"
   target_satellite_device: |-
     {% for sat in expand('group.viewassist_satellites') %}
       {% if (device_id(sat.attributes.mic_device)  == trigger.device_id) or (device_id(sat.attributes.display_device)  == trigger.device_id) %}
