@@ -2,7 +2,7 @@
 # Written by - jsittner
 blueprint:
   name: View Assist - Locate a Person
-  description: Ask Assist to locate a person (View Assist locateaperson v 1.0.12)
+  description: Ask Assist to locate a person (View Assist locateaperson v 1.0.13)
   domain: automation
   input:
     command_prompt:
@@ -17,6 +17,10 @@ blueprint:
       name: Info View
       description: The View Assist dashboard view to use for info display
       default: /dashboard-viewassist/info
+    person_names:
+     name: Person dictionary
+     description: The phonetic name followed by the home assistant name
+     default: '{"john":"jon","simon":"simon"}'          
     group_entity:
       name: Group Entity
       description: >-
@@ -34,6 +38,8 @@ description: "Ask Assist to locate a person"
 variables:
   view: !input view
   view_info: !input view_info
+  input_person_names: !input person_names
+  person_names: "{{ input_person_names | from_json}}"  
   group_entity: !input group_entity
   target_satellite_device: |-
     {% for sat in expand('group.viewassist_satellites') %}
@@ -62,7 +68,6 @@ action:
         target:
           device_id: "{{ target_display_device }}"
         action: browser_mod.navigate
-        enabled: false
       - data:
           value: map
         target:
@@ -84,7 +89,6 @@ else:
     target:
       device_id: "{{ target_display_device }}"
     action: browser_mod.navigate
-    enabled: false
   - data:
       value: info
     target:
