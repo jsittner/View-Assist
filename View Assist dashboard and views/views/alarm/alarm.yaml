@@ -5,7 +5,7 @@ variables:
     [[[
       var assistbid = hass.states[variables.assist_group].attributes.entity_id
         .find((eid) => hass.states[eid].attributes.browser_id === localStorage.getItem("browser_mod-browser-id")) ?? variables.default_satellite;
-      var alarm_id = hass.states[assistbid].attributes.alarm_id;
+      var alarm_id = hass.states[assistbid].attributes.alarm_name;
       try {return `${alarm_id}`;} catch { return  ""}
     ]]] 
 template:
