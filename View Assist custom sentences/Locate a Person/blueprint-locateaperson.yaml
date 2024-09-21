@@ -31,7 +31,7 @@ blueprint:
         The phonetic name followed by the home assistant name (example
         '{"john":"jon","simon":"simon"}' )
       default: '{"john":"jon","simon":"simon"}'
-alias: View Assist - Spell a Word
+alias: View Assist - Locate a Person
 description: "Ask Assist to locate a person"
 variables:
   group_entity: group.viewassist_satellites
