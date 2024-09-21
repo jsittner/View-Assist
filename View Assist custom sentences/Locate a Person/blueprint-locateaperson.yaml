@@ -2,7 +2,7 @@
 # Written by - jsittner
 blueprint:
   name: View Assist - Locate a Person
-  description: Ask Assist to locate a person (View Assist locateaperson v 1.0.10)
+  description: Ask Assist to locate a person (View Assist locateaperson v 1.0.11)
   domain: automation
   input:
     command_prompt:
@@ -38,8 +38,6 @@ description: "Ask Assist to locate a person"
 variables:
   view: !input view
   view_info: !input view_info
-  input_person_names: !input person_names
-  person_names: "{{ input_person_names | from_json}}"
   group_entity: !input group_entity
   target_satellite_device: |-
     {% for sat in expand('group.viewassist_satellites') %}
@@ -57,6 +55,9 @@ trigger:
       - !input command_prompt
 condition: []
 action:
+  - variable: 
+      input_person_names: !input person_names
+      person_names: "{{ input_person_names | from_json}}"
   - if:
       - condition: template
         value_template: >-
