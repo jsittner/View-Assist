@@ -2,7 +2,7 @@
 # Written by - jsittner
 blueprint:
   name: View Assist - Locate a Person
-  description: Ask Assist to locate a person (View Assist locateaperson v 1.0.13)
+  description: Ask Assist to locate a person (View Assist locateaperson v 1.0.14)
   domain: automation
   input:
     command_prompt:
@@ -63,17 +63,16 @@ action:
           {% if target_satellite_device_type != 'audio_only' %}true{% else
           %}false{% endif %}
     then:
-      - data:
+      - service: browser_mod.navigate
+        data:
           path: "{{ view }}"
         target:
-          device_id: "{{ target_display_device }}"
-        action: browser_mod.navigate
-      - data:
+          device_id: "{{target_display_device}}"              
+      - service: input_text.set_value
+        data:
           value: map
         target:
           entity_id: "{{ target_display_page_view }}"
-        action: input_text.set_value
-enabled: true
 else:
   - action: python_script.set_state
     data:
@@ -84,14 +83,14 @@ else:
         name.</center>
       message_font_size: 6vw
   - set_conversation_response: "{{ trigger.slots.person }} isn't a valid name"
-  - data:
+  - service: browser_mod.navigate
+    data:
       path: "{{ view_info }}"
     target:
-      device_id: "{{ target_display_device }}"
-    action: browser_mod.navigate
-  - data:
+      device_id: "{{target_display_device}}"  
+  - service: input_text.set_value
+    data:
       value: info
     target:
       entity_id: "{{ target_display_page_view }}"
-    action: input_text.set_value
 mode: single  
