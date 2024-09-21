@@ -214,6 +214,16 @@ action:
           - condition: trigger
             id:
               - ringalarm
+          - condition: template
+            value_template: >-
+              {% if
+              state_attr(trigger.event.data.target_satellite_device,'timer_list')
+              | selectattr('unique_id', 'eq', trigger.event.data.unique_id) |
+              list %}
+
+              true
+
+              {% endif %}
         sequence:
           - variables:
               target_satellite_device: "{{ trigger.event.data.target_satellite_device }}"
