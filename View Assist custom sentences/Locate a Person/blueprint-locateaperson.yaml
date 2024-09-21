@@ -1,1 +1,95 @@
-
+# View Assist - Locate a Person (v 1.0.0)
+# Written by - jsittner
+blueprint:
+  name: View Assist - Locate a Person
+  description: Ask Assist to locate a person (View Assist locateaperson v 1.0.0)
+  domain: automation
+  input:
+    view:
+      name: View
+      description: The View Assist dashboard view to use for map display
+      default: /dashboard-viewassist/map
+    view_info:
+      name: Info View
+      description: The View Assist dashboard view to use for info display
+      default: /dashboard-viewassist/info
+    group_entity:
+      name: Group Entity
+      description: >-
+        The group that holds the list of View Assist satellites(example
+        group.viewassist_satellites)
+      selector:
+        entity:
+          filter:
+            - domain:
+                - group
+          multiple: false
+      default: group.viewassist_satellites
+    input_person_names:
+      name: Person dictionary
+      description: >-
+        The phonetic name followed by the home assistant name (example
+        {"john":"jon"})
+      default: "{"john":"jon","simon":"simon"}"
+    person_names: "{{ input_person_names | from_json}}"
+alias: View Assist - Spell a Word
+description: "Ask Assist to locate a person"
+variables:
+  group_entity: group.viewassist_satellites
+  dashboard: /dashboard-viewassist/map
+  target_satellite_device: |-
+    {% for sat in expand('group.viewassist_satellites') %}
+      {% if (device_id(sat.attributes.mic_device)  == trigger.device_id) or (device_id(sat.attributes.display_device)  == trigger.device_id) %}
+        {{ sat.entity_id }}
+      {% endif %}
+    {% endfor %}
+  target_display_device: "{{ device_id(state_attr(target_satellite_device, 'display_device')) }}"
+  target_mediaplayer_device: "{{ state_attr(target_satellite_device, 'mediaplayer_device') }}"
+  target_satellite_device_type: "{{ state_attr(target_satellite_device, 'type') }}"
+  target_display_page_view: "{{ state_attr(target_satellite_device, 'page_view') }}"  
+trigger:
+  - platform: conversation
+    command:
+      - !input command_prompt
+condition: []
+action:
+  - if:
+      - condition: template
+        value_template: >-
+          {% if target_satellite_device_type != 'audio_only' %}true{% else
+          %}false{% endif %}
+    then:
+      - data:
+          path: "{{ view }}"
+        target:
+          device_id: "{{ target_display_device }}"
+        action: browser_mod.navigate
+        enabled: false
+      - data:
+          value: map
+        target:
+          entity_id: "{{ target_display_page_view }}"
+        action: input_text.set_value
+enabled: true
+else:
+  - action: python_script.set_state
+    data:
+      entity_id: "{{ target_satellite_device }}"
+      title: ""
+      message: >-
+        <center>{{ trigger.slots.person |capitalize}} isn't a valid
+        name.</center>
+      message_font_size: 6vw
+  - set_conversation_response: "{{ trigger.slots.person }} isn't a valid name"
+  - data:
+      path: "{{ view_info }}"
+    target:
+      device_id: "{{ target_display_device }}"
+    action: browser_mod.navigate
+    enabled: false
+  - data:
+      value: info
+    target:
+      entity_id: "{{ target_display_page_view }}"
+    action: input_text.set_value
+mode: single  
