@@ -40,6 +40,14 @@ trigger:
     event_data:
       timer_status: expired
     id: ringalarm
+  - platform: conversation
+    command:
+      - how much time (is) left on my {name} timer
+    id: timeremaining
+  - platform: conversation
+    command:
+      - cancel my {name} timer
+    id: canceltimer
 condition: []
 action:
   - variables:
@@ -335,4 +343,77 @@ action:
                     alarm_id: "{{ alarm_id }}"
                   target_time: "{{ alarm_time }}"
                 action: pyscript.schedule_event_at_time
+      - conditions:
+          - condition: trigger
+            id:
+              - timeremaining
+        sequence:
+          - variables:
+              target_satellite_device: |-
+                {% for sat in expand(group_entity) %}
+                  {% if (device_id(sat.attributes.mic_device)  == trigger.device_id) or (device_id(sat.attributes.display_device)  == trigger.device_id) %}
+                    {{ sat.entity_id }}
+                  {% endif %}
+                {% endfor %}
+              target_display_device: >-
+                {{ device_id(state_attr(target_satellite_device,
+                'display_device')) }}
+              target_mediaplayer_device: "{{ state_attr(target_satellite_device, 'mediaplayer_device') }}"
+              target_time: >-
+                {{state_attr(target_satellite_device,'timer_list') |
+                selectattr('timer_id', 'eq', trigger.slots.name)|
+                map(attribute='target_time') | first }}
+            enabled: true
+          - action: pyscript.get_time_difference
+            data:
+              target_time: "{{ target_time }}"
+            response_variable: time_remaining
+          - set_conversation_response: >-
+              You have {{ time_remaining['time_difference'] }} on your {{
+              trigger.slots.name }} timer
+      - conditions:
+          - condition: trigger
+            id:
+              - canceltimer
+        sequence:
+          - variables:
+              target_satellite_device: |-
+                {% for sat in expand(group_entity) %}
+                  {% if (device_id(sat.attributes.mic_device)  == trigger.device_id) or (device_id(sat.attributes.display_device)  == trigger.device_id) %}
+                    {{ sat.entity_id }}
+                  {% endif %}
+                {% endfor %}
+              target_display_device: >-
+                {{ device_id(state_attr(target_satellite_device,
+                'display_device')) }}
+              target_mediaplayer_device: "{{ state_attr(target_satellite_device, 'mediaplayer_device') }}"
+              unique_id: >-
+                {{state_attr(target_satellite_device,'timer_list') |
+                selectattr('timer_id', 'eq', trigger.slots.name)|
+                map(attribute='unique_id') | first }}
+            enabled: true
+          - if:
+              - condition: template
+                value_template: >-
+                  {% if state_attr(target_satellite_device,'timer_list') |
+                  selectattr('unique_id', 'eq', unique_id) | list %}
+
+                  true
+
+                  {% endif %}
+            then:
+              - variables:
+                  timer_list: >-
+                    {{ state_attr(target_satellite_device,'timer_list') |
+                    rejectattr('unique_id', 'eq', unique_id) | list }}
+                enabled: true
+              - data:
+                  entity_id: "{{ target_satellite_device }}"
+                  timer_list: "{{ timer_list }}"
+                action: python_script.set_state
+              - set_conversation_response: Your {{ trigger.slots.name }} timer has been canceled
+            else:
+              - set_conversation_response: >-
+                  I could not find an active timer called {{ trigger.slots.name
+                  }}
 mode: single
