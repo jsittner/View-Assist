@@ -9,8 +9,12 @@ Timers are finally here!  This automation will allow you to set timers, alarms a
 ## Dev Notes
 * Things not working:
   * Cannot cancel alarm
+  * Cannot list alarm
   * ~Snooze (need to rewrite to use service instead of calendar)~
   * Snooze works but have to press the button twice??!
+  * Handle case with timer_list does not exist
+  * Add write to disk persistence
+  * move seconds, minutes, hours, days, weeks, etc to pyscript call for setting timers in other automations (eg play sound machine for 20 minutes) 
 * Pyscript functions will be renamed and additional function for cancelling will be added
 
 This is a big work in progress.  By far this is the most complicated automation to date.  Thanks for your patience.  What is posted is fully working but not fully polished in terms of presentation and features.
