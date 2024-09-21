@@ -2,7 +2,7 @@
 # Written by - jsittner
 blueprint:
   name: View Assist - Locate a Person
-  description: Ask Assist to locate a person (View Assist locateaperson v 1.0.7)
+  description: Ask Assist to locate a person (View Assist locateaperson v 1.0.8)
   domain: automation
   input:
     command_prompt:
