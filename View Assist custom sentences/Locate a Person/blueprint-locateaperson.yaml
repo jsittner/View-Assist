@@ -30,7 +30,7 @@ blueprint:
       description: >-
         The phonetic name followed by the home assistant name (example
         {"john":"jon"})
-      default: '{"john":"jon","simon":"simon"}'
+      default: '{\"john\":\"jon\",\"simon\":\"simon\"}'
     person_names: "{{ input_person_names | from_json}}"
 alias: View Assist - Spell a Word
 description: "Ask Assist to locate a person"
