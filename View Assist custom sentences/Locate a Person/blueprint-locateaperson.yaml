@@ -2,7 +2,7 @@
 # Written by - jsittner
 blueprint:
   name: View Assist - Locate a Person
-  description: Ask Assist to locate a person (View Assist locateaperson v 1.0.11)
+  description: Ask Assist to locate a person (View Assist locateaperson v 1.0.12)
   domain: automation
   input:
     command_prompt:
@@ -29,10 +29,6 @@ blueprint:
                 - group
           multiple: false
       default: group.viewassist_satellites
-    person_names:
-      name: Person dictionary
-      description: The phonetic name followed by the home assistant name
-      default: '{"john":"jon","simon":"simon"}'    
 alias: View Assist - Locate a Person
 description: "Ask Assist to locate a person"
 variables:
@@ -55,9 +51,6 @@ trigger:
       - !input command_prompt
 condition: []
 action:
-  - variable: 
-      input_person_names: !input person_names
-      person_names: "{{ input_person_names | from_json}}"
   - if:
       - condition: template
         value_template: >-
