@@ -39,7 +39,6 @@ variables:
   view: !input view
   view_info: !input view_info
   group_entity: !input group_entity
-  person_names: "{{ input_person_names | from_json}}"
   target_satellite_device: |-
     {% for sat in expand('group.viewassist_satellites') %}
       {% if (device_id(sat.attributes.mic_device)  == trigger.device_id) or (device_id(sat.attributes.display_device)  == trigger.device_id) %}
