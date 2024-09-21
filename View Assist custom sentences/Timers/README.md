@@ -8,7 +8,8 @@ Timers are finally here!  This automation will allow you to set timers, alarms a
 * Create [alarm view](https://raw.githubusercontent.com/dinki/View-Assist/viewassist-timers/View%20Assist%20dashboard%20and%20views/views/alarm/alarm.yaml)
 ## Dev Notes
 * Things not working:
-  * Cannot cancel alarm
+  * ~Cannot cancel alarm~
+  * ~cannot list time remaining~
   * Cannot list alarm
   * ~Snooze (need to rewrite to use service instead of calendar)~
   * Snooze works but have to press the button twice??!
