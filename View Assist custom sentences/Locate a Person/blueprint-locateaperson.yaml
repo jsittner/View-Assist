@@ -58,6 +58,8 @@ trigger:
       - !input command_prompt
 condition: []
 action:
+  variables:
+    person_names: "{{ input_person_names | from_json}}"
   - if:
       - condition: template
         value_template: >-
