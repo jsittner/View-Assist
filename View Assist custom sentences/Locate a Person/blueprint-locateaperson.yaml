@@ -34,8 +34,11 @@ blueprint:
 alias: View Assist - Locate a Person
 description: "Ask Assist to locate a person"
 variables:
-  group_entity: group.viewassist_satellites
-  dashboard: /dashboard-viewassist/map
+  view: !input view
+  view_info: !input view_info
+  region: !input region
+  group_entity: !input group_entity
+  places: "{{ input_places | from_json}}"
   person_names: "{{ input_person_names | from_json}}"
   target_satellite_device: |-
     {% for sat in expand('group.viewassist_satellites') %}
