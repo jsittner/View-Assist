@@ -10,7 +10,7 @@ blueprint:
       description: The phrase you want to use to trigger the automation
       default: "(locate|map) [my] {person}"  
     view:
-      name: View
+      name: Map View
       description: The View Assist dashboard view to use for map display
       default: /dashboard-viewassist/map
     view_info:
@@ -31,8 +31,7 @@ blueprint:
       default: group.viewassist_satellites
     input_person_names:
       name: Person dictionary
-      description: >-
-        The phonetic name followed by the home assistant name
+      description: The phonetic name followed by the home assistant name
       default: '{"work":"123 Main Street, Beverly Hills, CA 90210","the white house":"1600 Pennsylvania Avenue NW, Washington, DC 20500"}'
 alias: View Assist - Locate a Person
 description: "Ask Assist to locate a person"
