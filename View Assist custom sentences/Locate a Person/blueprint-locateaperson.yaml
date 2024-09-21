@@ -2,7 +2,7 @@
 # Written by - jsittner
 blueprint:
   name: View Assist - Locate a Person
-  description: Ask Assist to locate a person (View Assist locateaperson v 1.0.14)
+  description: Ask Assist to locate a person (View Assist locateaperson v 1.0.15)
   domain: automation
   input:
     command_prompt:
@@ -59,38 +59,63 @@ condition: []
 action:
   - if:
       - condition: template
-        value_template: >-
-          {% if target_satellite_device_type != 'audio_only' %}true{% else
-          %}false{% endif %}
+        value_template: "{% if trigger.slots.person in person_names %}true{%endif%}"
+        enabled: true
     then:
-      - service: browser_mod.navigate
+      - variables:
+          location_source: >-
+            {{ state_attr('person.'+person_names[trigger.slots.person],
+            'source') }}
+          geocoded_source: >-
+            {% set geocoded = 'sensor.' + location_source.split('.', 1)[1] +
+            '_geocoded_location'%} {{ geocoded }}
+          enabled: true
+      - set_conversation_response: >-
+          {{ person_names[trigger.slots.person] }} has been located in {{
+          state_attr(geocoded_source, 'locality') }}
+        enabled: true
+      - action: python_script.set_state
         data:
-          path: "{{ view }}"
+          entity_id: "{{ target_satellite_device }}"
+          location_source: "{{ location_source }}"
+          geocoded_source: "{{ geocoded_source }}"
+      - if:
+          - condition: template
+            value_template: >-
+              {% if target_satellite_device_type != 'audio_only' %}true{% else
+              %}false{% endif %}
+        then:
+          - data:
+              path: "{{ view }}"
+            target:
+              device_id: "{{ target_display_device }}"
+            action: browser_mod.navigate
+            enabled: false
+          - data:
+              value: map
+            target:
+              entity_id: "{{ target_display_page_view }}"
+            action: input_text.set_value
+    enabled: true
+    else:
+      - action: python_script.set_state
+        data:
+          entity_id: "{{ target_satellite_device }}"
+          title: ""
+          message: >-
+            <center>{{ trigger.slots.person |capitalize}} isn't a valid
+            name.</center>
+          message_font_size: 6vw
+      - set_conversation_response: "{{ trigger.slots.person }} isn't a valid name"
+      - data:
+          path: "{{ view_info }}"
         target:
-          device_id: "{{target_display_device}}"              
-      - service: input_text.set_value
-        data:
-          value: map
+          device_id: "{{ target_display_device }}"
+        action: browser_mod.navigate
+        enabled: false
+      - data:
+          value: info
         target:
           entity_id: "{{ target_display_page_view }}"
-else:
-  - action: python_script.set_state
-    data:
-      entity_id: "{{ target_satellite_device }}"
-      title: ""
-      message: >-
-        <center>{{ trigger.slots.person |capitalize}} isn't a valid
-        name.</center>
-      message_font_size: 6vw
-  - set_conversation_response: "{{ trigger.slots.person }} isn't a valid name"
-  - service: browser_mod.navigate
-    data:
-      path: "{{ view_info }}"
-    target:
-      device_id: "{{target_display_device}}"  
-  - service: input_text.set_value
-    data:
-      value: info
-    target:
-      entity_id: "{{ target_display_page_view }}"
+        action: input_text.set_value
 mode: single  
