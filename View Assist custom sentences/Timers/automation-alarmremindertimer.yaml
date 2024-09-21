@@ -109,8 +109,8 @@ action:
                       alarm_id: >-
                         {% if trigger.slots.reminder is defined %}{{
                         trigger.slots.reminder }}{% elif trigger.slots.name is
-                        defined %}{{ trigger.slots.name | lower}}{% else %}{{
-                        alarm_time }}{% endif %}
+                        defined %}{{ trigger.slots.name | lower}}{% else
+                        %}unnamed{% endif %}
                       timer_list:
                         - unique_id: "{{ unique_id }}"
                           alarm_type: "{{ alarm_type }}"
@@ -130,7 +130,7 @@ action:
                         target_satellite_device: "{{ target_satellite_device }}"
                         target_mediaplayer_device: "{{ target_mediaplayer_device }}"
                         target_display_device: "{{ target_display_device }}"
-                        alarm_id: "{{ alarm_id | capitalize}}"
+                        alarm_id: "{{ alarm_id }}"
                       target_time: "{{ alarm_time }}"
                     action: pyscript.schedule_event_at_time
                   - set_conversation_response: >-
@@ -154,11 +154,11 @@ action:
                       event_data:
                         unique_id: "{{ unique_id }}"
                         timer_status: expired
-                        alarm_type: Reminder
+                        alarm_type: Alarm
                         target_satellite_device: "{{ target_satellite_device }}"
                         target_mediaplayer_device: "{{ target_mediaplayer_device }}"
                         target_display_device: "{{ target_display_device }}"
-                        alarm_id: "{{ alarm_id | capitalize }}"
+                        alarm_id: "{{ alarm_id }}"
                       target_time: "{{ alarm_time }}"
                     action: pyscript.schedule_event_at_time
                   - set_conversation_response: >-
@@ -197,7 +197,9 @@ action:
                     target_satellite_device: "{{ target_satellite_device }}"
                     target_mediaplayer_device: "{{ target_mediaplayer_device }}"
                     target_display_device: "{{ target_display_device }}"
-                    alarm_id: "{{ alarm_time }}"
+                    alarm_id: >-
+                      {{ alarm_time |  as_timestamp |
+                      timestamp_custom('%H:%M')}} Alarm
                   target_time: "{{ alarm_time }}"
                 action: pyscript.schedule_event_at_time
               - set_conversation_response: Alarm set for {{trigger.slots.time}}
@@ -219,8 +221,8 @@ action:
               target_mediaplayer_device: "{{ trigger.event.data.target_mediaplayer_device }}"
               alarm_type: "{{ trigger.event.data.target_alarm_type }}"
               alarm_name: |-
-                {% if trigger.event.data.reminder is defined %}
-                  {{ trigger.event.data.reminder }}
+                {% if trigger.event.data.alarm_id is defined %}
+                  {{ trigger.event.data.alarm_id }}
                 {% endif %}
               timer_list: >-
                 {{ state_attr(target_satellite_device,'timer_list') |
@@ -232,7 +234,7 @@ action:
               alarm: alarming
               mode: hold
               alarm_type: "{{ alarm_type }}"
-              alarm_name: "{{ reminder }}"
+              alarm_name: "{{ alarm_name }}"
               timer_list: "{{ timer_list }}"
             action: python_script.set_state
           - data:
