@@ -18,7 +18,7 @@ blueprint:
       description: The View Assist dashboard view to use for info display
       default: /dashboard-viewassist/info
     person_names:
-     name: Person dictionary
+     name: Person Dictionary
      description: The phonetic name followed by the home assistant name
      default: '{"john":"jon","simon":"simon"}'          
     group_entity:
