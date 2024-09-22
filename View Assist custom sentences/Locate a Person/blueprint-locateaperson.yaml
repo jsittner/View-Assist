@@ -103,9 +103,9 @@ action:
           entity_id: "{{ target_satellite_device }}"
           title: ""
           message: >-
-            <center>The name "{{ trigger.slots.person |capitalize}}" hasn't been defined or isn't a valid person home assistant</center>
+            <center>The name "{{ trigger.slots.person |capitalize}}" hasn't been defined</center>
           message_font_size: 6vw
-      - set_conversation_response: The name {{ trigger.slots.person }} hasn't been defined or isn't a valid person home assistant
+      - set_conversation_response: The name {{ trigger.slots.person }} hasn't been defined
       - data:
           path: "{{ view_info }}"
         target:
