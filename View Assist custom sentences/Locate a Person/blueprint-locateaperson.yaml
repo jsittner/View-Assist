@@ -2,7 +2,7 @@
 # Written by - jsittner
 blueprint:
   name: View Assist - Locate a Person
-  description: Ask Assist to locate a person (View Assist locateaperson v 1.0.18)
+  description: Ask Assist to locate a person (View Assist locateaperson v 1.0.19)
   domain: automation
   input:
     command_prompt:
@@ -103,7 +103,7 @@ action:
           entity_id: "{{ target_satellite_device }}"
           title: ""
           message: >-
-            <center>The name "{{ trigger.slots.person |capitalize}}" hasn't been defined</center>
+            <center>The name '{{ trigger.slots.person |capitalize}}' hasn't been defined</center>
           message_font_size: 6vw
       - set_conversation_response: The name {{ trigger.slots.person }} hasn't been defined
       - data:
