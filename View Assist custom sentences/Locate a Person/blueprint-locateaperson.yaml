@@ -2,7 +2,7 @@
 # Written by - jsittner
 blueprint:
   name: View Assist - Locate a Person
-  description: Ask Assist to locate a person (View Assist locateaperson v 1.0.15)
+  description: Ask Assist to locate a person (View Assist locateaperson v 1.0.16)
   domain: automation
   input:
     command_prompt:
@@ -103,10 +103,9 @@ action:
           entity_id: "{{ target_satellite_device }}"
           title: ""
           message: >-
-            <center>{{ trigger.slots.person |capitalize}} isn't a valid
-            name.</center>
+            <center>{{ trigger.slots.person |capitalize}} isn't a valid person in home assistant</center>
           message_font_size: 6vw
-      - set_conversation_response: "{{ trigger.slots.person }} isn't a valid name"
+      - set_conversation_response: "{{ trigger.slots.person }} isn't a valid person in home assistant"
       - data:
           path: "{{ view_info }}"
         target:
