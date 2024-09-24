@@ -48,6 +48,10 @@ trigger:
     command:
       - cancel my {name} timer
     id: canceltimer
+  - platform: conversation
+    command:
+      - list my timers
+    id: listtimer
 condition: []
 action:
   - variables:
@@ -75,7 +79,12 @@ action:
               unique_id: >-
                 {% set unique_id = 'va' + now().timestamp() | int | string +
                 (range(100, 999) | random | string) %}{{ unique_id | string}}
-              old_list: "{{ state_attr(target_satellite_device, 'timer_list') }}"
+              old_list: |-
+                {% if state_attr(target_satellite_device, 'timer_list') %}
+                  {{ state_attr(target_satellite_device, 'timer_list') }}
+                {% else %}
+                  []
+                {% endif %}
             enabled: true
           - if:
               - condition: template
@@ -416,4 +425,36 @@ action:
               - set_conversation_response: >-
                   I could not find an active timer called {{ trigger.slots.name
                   }}
+      - conditions:
+          - condition: trigger
+            id:
+              - listtimer
+        sequence:
+          - variables:
+              target_satellite_device: |-
+                {% for sat in expand(group_entity) %}
+                  {% if (device_id(sat.attributes.mic_device)  == trigger.device_id) or (device_id(sat.attributes.display_device)  == trigger.device_id) %}
+                    {{ sat.entity_id }}
+                  {% endif %}
+                {% endfor %}
+              target_display_device: >-
+                {{ device_id(state_attr(target_satellite_device,
+                'display_device')) }}
+              target_mediaplayer_device: "{{ state_attr(target_satellite_device, 'mediaplayer_device') }}"
+            enabled: true
+          - set_conversation_response: >
+              {% set timers = state_attr(target_satellite_device, 'timer_list')
+              %}
+
+              {% set timer_count = timers | length %}
+
+              {% if timer_count == 0 %}
+                You have no active timers.
+              {% elif timer_count == 1 %}
+                You have 1 active timer and it is called {{ timers[0].timer_id }}.
+              {% else %}
+                {% set timer_names = timers | map(attribute='timer_id') | list %}
+                {% set last_timer = timer_names.pop() %}
+                You have {{ timer_count }} active timers and they are {{ timer_names | join(', ') }} and {{ last_timer }}.
+              {% endif %}
 mode: single
