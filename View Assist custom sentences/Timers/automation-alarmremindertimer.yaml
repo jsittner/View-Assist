@@ -79,6 +79,22 @@ action:
               unique_id: >-
                 {% set unique_id = 'va' + now().timestamp() | int | string +
                 (range(100, 999) | random | string) %}{{ unique_id | string}}
+              old_list: "{{ state_attr(target_satellite_device, 'timer_list') }}"
+            enabled: false
+          - variables:
+              target_satellite_device: |-
+                {% for sat in expand(group_entity) %}
+                  {% if (device_id(sat.attributes.mic_device)  == trigger.device_id) or (device_id(sat.attributes.display_device)  == trigger.device_id) %}
+                    {{ sat.entity_id }}
+                  {% endif %}
+                {% endfor %}
+              target_display_device: >-
+                {{ device_id(state_attr(target_satellite_device,
+                'display_device')) }}
+              target_mediaplayer_device: "{{ state_attr(target_satellite_device, 'mediaplayer_device') }}"
+              unique_id: >-
+                {% set unique_id = 'va' + now().timestamp() | int | string +
+                (range(100, 999) | random | string) %}{{ unique_id | string}}
               old_list: |-
                 {% if state_attr(target_satellite_device, 'timer_list') %}
                   {{ state_attr(target_satellite_device, 'timer_list') }}
@@ -166,6 +182,14 @@ action:
                         {{strptime(today_at().date() ~ ' ' ~ trigger.slots.time,
                         '%Y-%m-%d %I:%M %p')}}
                       alarm_id: "{{ trigger.slots.reminder }}"
+                      timer_list:
+                        - unique_id: "{{ unique_id }}"
+                          alarm_type: "{{ alarm_type }}"
+                          timer_id: "{{ alarm_id | lower }}"
+                          target_satellite_device: "{{ target_satellite_device }}"
+                          target_mediaplayer_device: "{{ target_mediaplayer_device }}"
+                          target_display_device: "{{ target_display_device }}"
+                          target_time: "{{ alarm_time }}"
                   - data:
                       event_name: viewassist
                       event_data:
@@ -193,7 +217,25 @@ action:
                           target_display_device: "{{ target_display_device }}"
                           target_time: "{{ alarm_time }}"
                     action: python_script.set_state
+                    enabled: false
+                  - data:
+                      entity_id: "{{ target_satellite_device }}"
+                      timer_list: "{{ timer_list + old_list }}"
+                    action: python_script.set_state
+                    enabled: true
             else:
+              - variables:
+                  alarm_time: >-
+                    {{strptime(today_at().date() ~ ' ' ~ trigger.slots.time,
+                    '%Y-%m-%d %I:%M %p')}}
+                  timer_list:
+                    "{{ unique_id }}":
+                      timer_id: "{{ alarm_id | capitalize}}"
+                      target_satellite_device: "{{ target_satellite_device }}"
+                      target_mediaplayer_device: "{{ target_mediaplayer_device }}"
+                      target_display_device: "{{ target_display_device }}"
+                      target_time: "{{ alarm_time }}"
+                enabled: false
               - variables:
                   alarm_time: >-
                     {{strptime(today_at().date() ~ ' ' ~ trigger.slots.time,
@@ -236,11 +278,7 @@ action:
               {% if
               state_attr(trigger.event.data.target_satellite_device,'timer_list')
               | selectattr('unique_id', 'eq', trigger.event.data.unique_id) |
-              list %}
-
-              true
-
-              {% endif %}
+              list %}true{% endif %}
         sequence:
           - variables:
               target_satellite_device: "{{ trigger.event.data.target_satellite_device }}"
