@@ -240,9 +240,11 @@ action:
                   alarm_time: >-
                     {{strptime(today_at().date() ~ ' ' ~ trigger.slots.time,
                     '%Y-%m-%d %I:%M %p')}}
+                  alarm_id: "{{ trigger.slots.reminder }}"
                   timer_list:
-                    "{{ unique_id }}":
-                      timer_id: "{{ alarm_id | capitalize}}"
+                    - unique_id: "{{ unique_id }}"
+                      alarm_type: "{{ alarm_type }}"
+                      timer_id: "{{ alarm_id | lower }}"
                       target_satellite_device: "{{ target_satellite_device }}"
                       target_mediaplayer_device: "{{ target_mediaplayer_device }}"
                       target_display_device: "{{ target_display_device }}"
@@ -262,6 +264,14 @@ action:
                   target_time: "{{ alarm_time }}"
                 action: pyscript.schedule_event_at_time
               - set_conversation_response: Alarm set for {{trigger.slots.time}}
+              - data:
+                  entity_id: "{{ target_satellite_device }}"
+                  alarm_id: "{{ alarm_id | capitalize }}"
+                  alarm_type: "{{ alarm_type }}"
+                  old_list: "{{ old_list }}"
+                  timer_list: "{{ timer_list }}"
+                action: python_script.set_state
+                enabled: false
               - data:
                   entity_id: "{{ target_satellite_device }}"
                   alarm_id: "{{ alarm_id | capitalize }}"
