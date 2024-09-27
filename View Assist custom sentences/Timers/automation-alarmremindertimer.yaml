@@ -15,11 +15,11 @@ trigger:
       - >-
         remind me to {reminder} in {when} | set a reminder to {reminder} in
         {when} | remind me in {when} to {reminder}
-      - set (a|an) {name} timer for {when}
+      - (set|start) (a|an) {name} timer for {when}
     id: setalarm
   - platform: conversation
     command:
-      - Turn off alarm
+      - (Turn off | cancel | stop | snooze) alarm
     id: turnoffalarm
   - platform: event
     event_type: viewassist
@@ -319,24 +319,27 @@ action:
               - turnoffalarm
         sequence:
           - variables:
-              target_satellite_device: "{{state_attr(calendar_entity,'message').split(',')[1]}}"
+              target_satellite_device: |-
+                {% for sat in expand(group_entity) %}
+                  {% if (device_id(sat.attributes.mic_device)  == trigger.device_id) or (device_id(sat.attributes.display_device)  == trigger.device_id) %}
+                    {{ sat.entity_id }}
+                  {% endif %}
+                {% endfor %}
               target_display_device: >-
-                {{ device_id (state_attr(target_satellite_device,
+                {{ device_id(state_attr(target_satellite_device,
                 'display_device')) }}
-              target_mediaplayer_device: "{{state_attr(target_satellite_device, 'mediaplayer_device')}}"
-              target_timer_device: "{{ state_attr(target_satellite_device, 'timer') }}"
+              target_mediaplayer_device: "{{ state_attr(target_satellite_device, 'mediaplayer_device') }}"
             enabled: true
           - data:
               entity_id: "{{ target_satellite_device }}"
-              alarm: idle
+              alarm: >-
+                {% if 'snooze' in trigger.sentence|lower %}snooze{% else
+                %}idle{% endif %}
               mode: normal
-              reminder: ""
             action: python_script.set_state
-          - action: timer.finish
-            target:
-              entity_id: "{{ target_timer_device }}"
-            data: {}
+            enabled: true
           - set_conversation_response: ""
+            enabled: true
       - conditions:
           - condition: trigger
             id:
@@ -442,4 +445,4 @@ action:
                 {% set last_timer = timer_names.pop() %}
                 You have {{ timer_count }} active timers and they are {{ timer_names | join(', ') }} and {{ last_timer }}.
               {% endif %}
-mode: single
+mode: parallel
