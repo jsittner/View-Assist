@@ -76,7 +76,7 @@ action:
               - condition: template
                 value_template: >-
                   {{ (trigger.slots.reminder is defined) or (trigger.slots.name
-                  is defined) or ('Set a timer' in trigger.sentence)}}
+                  is defined) or ('set a timer' in trigger.sentence | lower )}}
             then:
               - if:
                   - condition: template
@@ -114,6 +114,9 @@ action:
                         trigger.slots.reminder }}{% elif trigger.slots.name is
                         defined %}{{ trigger.slots.name | lower}}{% else
                         %}unnamed{% endif %}
+                      alarm_type: >-
+                        {% if 'timer' in trigger.sentence  | lower %}timer{%
+                        else %}reminder{% endif %}
                       timer_list:
                         - unique_id: "{{ unique_id }}"
                           alarm_type: "{{ alarm_type }}"
@@ -152,6 +155,9 @@ action:
                         {{strptime(today_at().date() ~ ' ' ~ trigger.slots.time,
                         '%Y-%m-%d %I:%M %p')}}
                       alarm_id: "{{ trigger.slots.reminder }}"
+                      alarm_type: >-
+                        {% if 'remind' in trigger.sentence  | lower %}reminder{%
+                        else %}alarm{% endif %}
                       timer_list:
                         - unique_id: "{{ unique_id }}"
                           alarm_type: "{{ alarm_type }}"
@@ -165,7 +171,7 @@ action:
                       event_data:
                         unique_id: "{{ unique_id }}"
                         timer_status: expired
-                        alarm_type: Alarm
+                        alarm_type: "{{ alarm_type }}"
                         target_satellite_device: "{{ target_satellite_device }}"
                         target_mediaplayer_device: "{{ target_mediaplayer_device }}"
                         target_display_device: "{{ target_display_device }}"
@@ -186,6 +192,9 @@ action:
                     {{strptime(today_at().date() ~ ' ' ~ trigger.slots.time,
                     '%Y-%m-%d %I:%M %p')}}
                   alarm_id: "{{ trigger.slots.reminder }}"
+                  alarm_type: >-
+                    {% if 'remind' in trigger.sentence | lower %}reminder{% else
+                    %}alarm{% endif %}
                   timer_list:
                     - unique_id: "{{ unique_id }}"
                       alarm_type: "{{ alarm_type }}"
@@ -199,7 +208,7 @@ action:
                   event_data:
                     unique_id: "{{ unique_id }}"
                     timer_status: expired
-                    alarm_type: Alarm
+                    alarm_type: "{{ alarm_type }}"
                     target_satellite_device: "{{ target_satellite_device }}"
                     target_mediaplayer_device: "{{ target_mediaplayer_device }}"
                     target_display_device: "{{ target_display_device }}"
@@ -213,8 +222,7 @@ action:
                   entity_id: "{{ target_satellite_device }}"
                   alarm_id: "{{ alarm_id | capitalize }}"
                   alarm_type: "{{ alarm_type }}"
-                  old_list: "{{ old_list }}"
-                  timer_list: "{{ timer_list }}"
+                  timer_list: "{{ timer_list + old_list }}"
                 action: python_script.set_state
       - conditions:
           - condition: trigger
@@ -239,7 +247,7 @@ action:
               old_list: >-
                 {{ state_attr(target_satellite_device,'timer_list') |
                 rejectattr('unique_id', 'eq', trigger.event.data.unique_id) |
-                list }}
+                rejectattr('target_time', 'lt', now()|string) | list }}
               unique_id: >-
                 {% set unique_id = 'va' + now().timestamp() | int | string +
                 (range(100, 999) | random | string) %}{{ unique_id | string}}
@@ -402,7 +410,8 @@ action:
               - variables:
                   timer_list: >-
                     {{ state_attr(target_satellite_device,'timer_list') |
-                    rejectattr('unique_id', 'eq', unique_id) | list }}
+                    rejectattr('unique_id', 'eq', unique_id) |
+                    rejectattr('target_time', 'lt', now()|string) | list }}
                 enabled: true
               - data:
                   entity_id: "{{ target_satellite_device }}"
