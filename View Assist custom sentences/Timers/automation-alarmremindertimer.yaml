@@ -22,15 +22,6 @@ trigger:
       - Turn off alarm
     id: turnoffalarm
   - platform: event
-    event_type: call_service
-    event_data:
-      domain: python_script
-      service: set_state
-      service_data:
-        alarm: snooze
-    id: snooze
-    enabled: false
-  - platform: event
     event_type: viewassist
     event_data:
       timer_status: expired
@@ -245,20 +236,6 @@ action:
                 {% if trigger.event.data.alarm_id is defined %}
                   {{ trigger.event.data.alarm_id }}
                 {% endif %}
-              timer_list: >-
-                {{ state_attr(target_satellite_device,'timer_list') |
-                rejectattr('unique_id', 'eq', trigger.event.data.unique_id) |
-                list }}
-            enabled: false
-          - variables:
-              target_satellite_device: "{{ trigger.event.data.target_satellite_device }}"
-              target_display_device: "{{ trigger.event.data.target_display_device }}"
-              target_mediaplayer_device: "{{ trigger.event.data.target_mediaplayer_device }}"
-              alarm_type: "{{ trigger.event.data.target_alarm_type }}"
-              alarm_name: |-
-                {% if trigger.event.data.alarm_id is defined %}
-                  {{ trigger.event.data.alarm_id }}
-                {% endif %}
               old_list: >-
                 {{ state_attr(target_satellite_device,'timer_list') |
                 rejectattr('unique_id', 'eq', trigger.event.data.unique_id) |
@@ -279,15 +256,6 @@ action:
                   target_mediaplayer_device: "{{ target_mediaplayer_device }}"
                   target_display_device: "{{ target_display_device }}"
                   target_time: "{{ alarm_time }}"
-          - data:
-              entity_id: "{{ target_satellite_device }}"
-              alarm: alarming
-              mode: hold
-              alarm_type: "{{ alarm_type }}"
-              alarm_name: "{{ alarm_name }}"
-              timer_list: "{{ timer_list }}"
-            action: python_script.set_state
-            enabled: false
           - data:
               entity_id: "{{ target_satellite_device }}"
               alarm: alarming
@@ -369,70 +337,6 @@ action:
               entity_id: "{{ target_timer_device }}"
             data: {}
           - set_conversation_response: ""
-      - conditions:
-          - condition: trigger
-            id:
-              - snooze
-        sequence:
-          - if:
-              - condition: template
-                value_template: "{{ trigger.event.data.service_data.alarm == \"snooze\" }}"
-            then:
-              - variables:
-                  target_satellite_device: "{{ trigger.event.data.service_data.entity_id }}"
-                  target_display_device: >-
-                    {{ device_id(state_attr(target_satellite_device,
-                    'display_device')) }}
-                  target_mediaplayer_device: >-
-                    {{ state_attr(target_satellite_device, 'mediaplayer_device')
-                    }}
-                  unique_id: >-
-                    {% set unique_id = 'va' + now().timestamp() | int | string +
-                    (range(100, 999) | random | string) %}{{ unique_id |
-                    string}}
-                  old_list: |-
-                    {% if state_attr(target_satellite_device, 'timer_list') %}
-                      {{ state_attr(target_satellite_device, 'timer_list') }}
-                    {% else %}
-                      []
-                    {% endif %}
-                  alarm_time: >-
-                    {{ (now()|as_datetime +
-                    timedelta(minutes=snooze_time)).strftime('%Y-%m-%d
-                    %H:%M:%S') }}  
-                  alarm_id: "{{ trigger.event.data.alarm_id | lower }}"
-                  timer_list:
-                    - unique_id: "{{ unique_id }}"
-                      alarm_type: "{{ trigger.event.data.alarm_type }}"
-                      alarm_id: "{{ trigger.event.data.alarm_id | lower }}"
-                      target_satellite_device: "{{ target_satellite_device }}"
-                      target_mediaplayer_device: "{{ target_mediaplayer_device }}"
-                      target_display_device: "{{ target_display_device }}"
-                      target_time: "{{ alarm_time }}"
-              - action: light.toggle
-                target:
-                  entity_id: light.monoprice_z_wave_on_off_plugin
-                data: {}
-              - data:
-                  alarm: idle
-                  mode: normal
-                  entity_id: "{{ target_satellite_device }}"
-                  timer_list: "{{ timer_list + old_list }}"
-                  donkey: donny
-                action: python_script.set_state
-                enabled: true
-              - data:
-                  event_name: viewassist
-                  event_data:
-                    unique_id: "{{ unique_id }}"
-                    timer_status: expired
-                    alarm_type: Alarm
-                    target_satellite_device: "{{ target_satellite_device }}"
-                    target_mediaplayer_device: "{{ target_mediaplayer_device }}"
-                    target_display_device: "{{ target_display_device }}"
-                    alarm_id: "{{ alarm_id }}"
-                  target_time: "{{ alarm_time }}"
-                action: pyscript.schedule_event_at_time
       - conditions:
           - condition: trigger
             id:
