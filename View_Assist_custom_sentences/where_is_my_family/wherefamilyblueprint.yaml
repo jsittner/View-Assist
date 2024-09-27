@@ -1,0 +1,117 @@
+blueprint:
+  name: View Assist - Where's My Wife
+  description: Ask assist the location of a person
+  domain: automation
+  input:
+    command:
+      name: Command
+      description: The phrase you want to use to trigger querying AI
+      default: (Where is | Where's) [my] {person}
+    person_names:
+      name: Name of the person you are looking for.  
+      description: Include any aliases and alternate ways of spelling that STT engine uses.  Must be in a list form even if only one item.  The first name is what will be displayed.
+      default: '["ciara","wife","sierra"]'
+    person_entity:
+      name: Entity of person you are looking for
+      default:
+    person_pronunciation:
+      name: Alternate pronunciation
+      description: Use this to help the TTS engine pronounce the name correctly
+      default: Sierra
+    person_tracker:
+      name: Device Tracker
+      default: device_tracker.phone_tracker
+    person_custom_locations:
+      name: Custom locations
+      description: Use if you want to substitute a zone name for an alias
+      default: '{"michele":"at her moms house","quinton":"at her brothers house","ymca":"working out"}'
+    person_waze:
+      name: Waze Travel Time entity
+      default: sensor.waze_travel_time
+    group_entity:
+      name: Group Entity
+      description: The group that holds the list of View Assist satellites(example
+        group.viewassist_satellites)
+      selector:
+        entity:
+          filter:
+          - domain:
+            - group
+          multiple: false
+      default: group.viewassist_satellites
+    view:
+      name: View
+      description: The View Assist dashboard view to use for map information display
+      default: /dashboard-viewassist/infopic_map
+trigger:
+  - platform: conversation
+    command: !input command
+condition: []
+action:
+  - variables:
+      view: !input view
+      group_entity: !input group_entity
+      input_person_names: !input person_names
+      person_names: "{{ input_person_names | from_json}}"
+      person_entity: !input person_entity
+      person_pronunciation: !input person_pronunciation
+      person_tracker: !input person_tracker
+      input_person_custom_locations: !input person_custom_locations
+      person_custom_locations: "{{ input_person_custom_locations | from_json}}"
+      person_waze: !input person_waze
+      target_satellite_device: |-
+        {% for sat in expand('group.viewassist_satellites') %}
+          {% if (device_id(sat.attributes.mic_device)  == trigger.device_id) or (device_id(sat.attributes.display_device)  == trigger.device_id) %}
+            {{ sat.entity_id }}
+          {% endif %}
+        {% endfor %}
+      target_display_device: "{{ device_id(state_attr(target_satellite_device, 'display_device')) }}"
+      target_mediaplayer_device: "{{ state_attr(target_satellite_device, 'mediaplayer_device') }}"
+      target_satellite_device_type: "{{ state_attr(target_satellite_device, 'type') }}"
+  - if:
+    - condition: template
+      value_template: "{% if trigger.slots.person in person_names %}true{%endif%}"
+    then:
+      - variables:
+          message: |-
+            {% set state = states(person_entity) %}
+            {% if state in person_custom_locations %}
+              {{ person_names[0][0]|upper}}{{person_names[0][1:] }} is {{ person_custom_locations[state] }}
+            {% elif state != 'not_home' %}
+              {{ person_names[0][0]|upper}}{{person_names[0][1:] }} is at {{ state }}
+            {% else %}
+              {{ person_names[0][0]|upper}}{{person_names[0][1:] }} is {{ states(person_waze)}} minutes away 
+            {% endif %}
+          voice_message: |-
+            {% set state = states(person_entity) %}
+            {% if state in person_custom_locations %}
+             {{ person_pronunciation }} is {{ person_custom_locations[state] }}
+            {% elif state != 'not_home' %}
+              {{ person_pronunciation }} is at {{ state }}
+            {% else %}
+              {{ person_pronunciation }} is {{ states(person_waze)}} minutes away 
+            {% endif %}
+          enabled: true
+      - set_conversation_response: "{{ voice_message }}"
+        enabled: true
+      - action: python_script.set_state
+        data:
+          entity_id: "{{ target_satellite_device }}"
+          message: "{{ message }}"
+          image: "{{ person_tracker }}"
+      - if:
+          - condition: template
+            value_template: >-
+              {% if target_satellite_device_type != 'audio_only' %}true{% else
+              %}false{% endif %}
+        then:
+          - data:
+              path: "{{ dashboard }}"
+            target:
+              device_id: "{{ target_display_device }}"
+            action: browser_mod.navigate
+    enabled: true
+variables:
+  group_entity: group.viewassist_satellites
+  dashboard: /dashboard-viewassist/infopic_map
+mode: single
