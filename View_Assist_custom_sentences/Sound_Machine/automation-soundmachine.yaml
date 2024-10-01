@@ -1,0 +1,132 @@
+alias: View Assist - Start Sound Machine
+description: ""
+trigger:
+  - platform: conversation
+    command:
+      - start (the) {soundtype} sound machine
+      - play (the) {soundtype} sound machine
+      - play (the) {soundtype} sound machine for {when}
+    id: startsoundmachine
+  - platform: event
+    event_type: viewassist
+    event_data:
+      timer_status: expired
+      alarm_type: soundmachine
+    id: stopsoundmachine
+condition: []
+action:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id:
+              - startsoundmachine
+        sequence:
+          - if:
+              - condition: template
+                value_template: "{{ trigger.slots.soundtype in soundmachine_dict }}"
+            then:
+              - if:
+                  - condition: template
+                    value_template: "{{ trigger.slots.when is defined}}"
+                then:
+                  - variables:
+                      time_values:
+                        second: 1
+                        seconds: 1
+                        minute: 60
+                        minutes: 60
+                        hour: 3600
+                        hours: 3600
+                      time_words:
+                        one: 1
+                        two: 2
+                        three: 3
+                        four: 4
+                        five: 5
+                        six: 6
+                        seven: 7
+                        eight: 8
+                        nine: 9
+                      time_int: >-
+                        {% set word = (trigger.slots.when).split(' ')[0] %}{{
+                        time_words[word] if word in time_words else word|int}}
+                      time_type: "{{ (trigger.slots.when).split(' ')[1] }}"
+                      time_start: "{{ time_int * time_values[time_type] }}"
+                      alarm_time: >-
+                        {{ (now() +
+                        timedelta(seconds=time_start)).strftime('%Y-%m-%d
+                        %H:%M:%S') }}
+                      alarm_type: soundmachine
+                  - data:
+                      event_name: viewassist
+                      event_data:
+                        timer_status: expired
+                        alarm_type: "{{ alarm_type }}"
+                        target_satellite_device: "{{ target_satellite_device }}"
+                        target_mediaplayer_device: "{{ target_mediaplayer_device }}"
+                        target_display_device: "{{ target_display_device }}"
+                      target_time: "{{ alarm_time }}"
+                    action: pyscript.schedule_event_at_time
+              - data:
+                  entity_id: "{{ target_satellite_device }}"
+                  soundmachine: playing
+                action: python_script.set_state
+                enabled: true
+              - data:
+                  media_content_id: "{{ soundmachine_dict[trigger.slots.soundtype] }}"
+                  media_content_type: MUSIC
+                target:
+                  entity_id: "{{ target_mediaplayer_device }}"
+                action: media_extractor.play_media
+                enabled: false
+              - repeat:
+                  sequence:
+                    - data:
+                        media_content_id: "{{ soundmachine_dict[trigger.slots.soundtype] }}"
+                        media_content_type: MUSIC
+                      target:
+                        entity_id: "{{ target_mediaplayer_device }}"
+                      action: media_extractor.play_media
+                    - delay:
+                        seconds: 2
+                    - wait_template: "{{ states(target_mediaplayer_device) == 'idle'}}"
+                      continue_on_timeout: true
+                      enabled: true
+                  while:
+                    - condition: template
+                      value_template: >-
+                        {{ (state_attr(target_satellite_device,'soundmachine')
+                        == 'playing') }}
+          - set_conversation_response: ""
+      - conditions:
+          - condition: trigger
+            id:
+              - stopsoundmachine
+        sequence:
+          - data:
+              entity_id: "{{ trigger.event.data.target_satellite_device }}"
+              soundmachine: idle
+            action: python_script.set_state
+            enabled: true
+variables:
+  target_satellite_device: |-
+    {% for sat in expand('group.viewassist_satellites') %}
+      {% if (device_id(sat.attributes.mic_device)  == trigger.device_id) or (device_id(sat.attributes.display_device)  == trigger.device_id) %}
+        {{ sat.entity_id }}
+      {% endif %}
+    {% endfor %}
+  target_display_device: "{{ device_id(state_attr(target_satellite_device, 'display_device')) }}"
+  target_mediaplayer_device: "{{ state_attr(target_satellite_device, 'mediaplayer_device') }}"
+  target_satellite_device_type: "{{ state_attr(target_satellite_device, 'type') }}"
+  soundmachine_dict:
+    thunder: >-
+      https://cdn.pixabay.com/download/audio/2023/11/13/audio_133d124575.mp3?filename=rain-and-thunder-176105.mp3
+    ocean: >-
+      https://cdn.pixabay.com/download/audio/2022/02/10/audio_7b02ccf85c.mp3?filename=gentle-ocean-waves-mix-2018-19693.mp3
+    rain: >-
+      https://cdn.pixabay.com/download/audio/2024/02/13/audio_9996ca8efa.mp3?filename=indoor-hard-rain-sound-190883.mp3
+    night: >-
+      https://cdn.pixabay.com/download/audio/2022/07/22/audio_2a0921bd88.mp3?filename=deep_south-night-sounds-115466.mp3
+    white noise: >-
+      https://cdn.pixabay.com/download/audio/2022/03/09/audio_9e5a1c0e28.mp3?filename=60-minutes-of-ultra-soft-noise-v2-25123.mp3
+mode: parallel
