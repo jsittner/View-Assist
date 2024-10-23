@@ -12,12 +12,21 @@ button_card_templates:
         ]]]      
       var_current_time: |
         [[[
-          if (variables.use_24_hour_time) {
-            var options = { hour: "2-digit", minute: "2-digit", hour12: false };
-          } else {
-            var options = { hour: "numeric", minute: "2-digit" };      
-          }
-          try {return new Date().toLocaleTimeString([], options).replace("AM","").replace("PM","").replace("am","").replace("pm","");} catch { return  ""}
+          try
+          {
+            if (variables.use_24_hour_time) {
+              var options = { hour: "2-digit", minute: "2-digit", hour12: false };
+            } else {
+              var options = { hour: "numeric", minute: "2-digit" };      
+            }
+            
+            let time = new Date().toLocaleTimeString([], options).replace("AM","").replace("PM","").replace("am","").replace("pm","");
+            
+            if(variables.use_24_hour_time) {
+              time = time.replace("24:", "00:");
+            }
+            return time;
+          } catch { return  ""}
         ]]]
       var_date_short: |
         [[[    
@@ -39,81 +48,123 @@ button_card_templates:
         ]]]
       var_assisting: |-
         [[[
-          var assist_assistbid = hass.states[variables.assist_group].attributes.entity_id
-           .find((eid) => hass.states[eid].attributes.browser_id === localStorage.getItem("browser_mod-browser-id")) ?? variables.default_satellite;
-          var micdevice = hass.states[assist_assistbid].attributes.mic_device;
-          var micstate = hass.states[micdevice].state;
-          if (micdevice.includes("_stt")) 
+          try 
           {
-            var assisting = micstate.includes("start");
-          }
-          else
-          {
-            var assisting = !micstate.includes("wake_word");
-          }          
-          try {return `${assisting}`;} catch { return  ""}
-        ]]]
+            var assist_assistbid = hass.states[variables.assist_group].attributes.entity_id
+             .find((eid) => hass.states[eid].attributes.browser_id === localStorage.getItem("browser_mod-browser-id")) ?? variables.default_satellite;
+            var micdevice = hass.states[assist_assistbid].attributes.mic_device;
+            var micstate = hass.states[micdevice].state;
+            if (micdevice.includes("_stt")) 
+            {
+              var assisting = micstate.includes("start");
+            }
+            else
+            {
+              var assisting = !micstate.includes("wake_word");
+            }
+            return `${assisting}`;
+          } catch { return  ""}
+        ]]] 
       var_mic_device: |-
         [[[
-          var micdevice_assistbid = hass.states[variables.assist_group].attributes.entity_id
-           .find((eid) => hass.states[eid].attributes.browser_id === localStorage.getItem("browser_mod-browser-id")) ?? variables.default_satellite;
-          var micdevice = hass.states[micdevice_assistbid].attributes.mic_device;
-          var micdevice = micdevice.replace("sensor","switch").replace("stt","mic");      
-          try {return `${micdevice}`;} catch { return  ""}
+          try
+          {
+            var micdevice_assistbid = hass.states[variables.assist_group].attributes.entity_id
+             .find((eid) => hass.states[eid].attributes.browser_id === localStorage.getItem("browser_mod-browser-id")) ?? variables.default_satellite;
+            var micdevice = hass.states[micdevice_assistbid].attributes.mic_device;
+            if (micdevice.includes("_stt"))
+              {
+                var micdevice = micdevice.replace("sensor","switch").replace("stt","mic");      
+              }
+            return `${micdevice}`;
+          } catch { return  ""}
         ]]]
       var_mic_mute: |-
         [[[
-          var micmute_assistbid = hass.states[variables.assist_group].attributes.entity_id
-           .find((eid) => hass.states[eid].attributes.browser_id === localStorage.getItem("browser_mod-browser-id")) ?? variables.default_satellite;
-          var micdevice = hass.states[micmute_assistbid].attributes.mic_device;
-          var micdevice = micdevice.replace("sensor","switch").replace("stt","mic");      
-          var micstate = hass.states[micdevice].state;
-          try {return `${micstate}`;} catch { return  ""}
+          try {
+            var micmute_assistbid = hass.states[variables.assist_group].attributes.entity_id
+             .find((eid) => hass.states[eid].attributes.browser_id === localStorage.getItem("browser_mod-browser-id")) ?? variables.default_satellite;
+            var micdevice = hass.states[micmute_assistbid].attributes.mic_device;
+            if (micdevice.includes("_stt"))
+              {
+                var micdevice = micdevice.replace("sensor","switch").replace("stt","mic");      
+              }            
+            var micstate = hass.states[micdevice].state;
+            return `${micstate}`;
+          } catch { return  "";}
         ]]]
       var_mic_switch: |-
         [[[
-          var micswitch_assistbid = hass.states[variables.assist_group].attributes.entity_id
-           .find((eid) => hass.states[eid].attributes.browser_id === localStorage.getItem("browser_mod-browser-id")) ?? variables.default_satellite;
-          var micdevice = hass.states[micswitch_assistbid].attributes.mic_device;
-          var micswitch = micdevice.replace("sensor","switch").replace("stt","mic");      
-          try {return `${micswitch}`;} catch { return  ""}
+          try {
+            var micswitch_assistbid = hass.states[variables.assist_group].attributes.entity_id
+             .find((eid) => hass.states[eid].attributes.browser_id === localStorage.getItem("browser_mod-browser-id")) ?? variables.default_satellite;
+            var micdevice = hass.states[micswitch_assistbid].attributes.mic_device;
+            if (micdevice.includes("_stt"))
+              {
+                var micswitch = micdevice.replace("sensor","switch").replace("stt","mic");      
+              }
+            else
+              {
+                var micswitch = micdevice.replace("sensor","switch").replace("simple_state","microphone");      
+              }
+            return `${micswitch}`;
+          } catch { return  "";}
         ]]]        
       var_mediaplayer_device: |-
         [[[
-          var mediadevice_assistbid = hass.states[variables.assist_group].attributes.entity_id
-           .find((eid) => hass.states[eid].attributes.browser_id === localStorage.getItem("browser_mod-browser-id")) ?? variables.default_satellite;
-          var mediadevice = hass.states[mediadevice_assistbid].attributes.mediaplayer_device;
-          try {return `${mediadevice}`;} catch { return  ""}
+          try {
+            var mediadevice_assistbid = hass.states[variables.assist_group].attributes.entity_id
+             .find((eid) => hass.states[eid].attributes.browser_id === localStorage.getItem("browser_mod-browser-id")) ?? variables.default_satellite;
+            var mediadevice = hass.states[mediadevice_assistbid].attributes.mediaplayer_device;
+            return `${mediadevice}`;
+          } catch { return  "";}
         ]]]        
       var_mediaplayer_mute: |-
         [[[
-          var mediaplayer_assistbid = hass.states[variables.assist_group].attributes.entity_id
-           .find((eid) => hass.states[eid].attributes.browser_id === localStorage.getItem("browser_mod-browser-id")) ?? variables.default_satellite;
-          var mediadevice = hass.states[mediaplayer_assistbid].attributes.mediaplayer_device;
-          var mediaplayerstate = hass.states[mediadevice].attributes.is_volume_muted;
-          try {return `${mediaplayerstate}`;} catch { return  ""}
+          try {
+            var mediaplayer_assistbid = hass.states[variables.assist_group].attributes.entity_id
+             .find((eid) => hass.states[eid].attributes.browser_id === localStorage.getItem("browser_mod-browser-id")) ?? variables.default_satellite;
+            var mediadevice = hass.states[mediaplayer_assistbid].attributes.mediaplayer_device;
+            var mediaplayerstate = hass.states[mediadevice].attributes.is_volume_muted;
+            return `${mediaplayerstate}`;
+          } catch { return  "";}
         ]]]
-      var_title: >-
-        [[[ try {return
-        states[variables.var_assistsat_entity].attributes.title;} catch {
-        return  ""} ]]]
-      var_message: >-
-        [[[ try {return
-        states[variables.var_assistsat_entity].attributes.message;} catch {
-        return  ""} ]]]
-      var_image: >-
-        [[[ try {return
-        states[variables.var_assistsat_entity].attributes.image;} catch {
-        return  ""} ]]]
-      var_font_size: >-
-        [[[ try {return
-        states[variables.var_assistsat_entity].attributes.message_font_size;}
-        catch { return  ""} ]]]
-      var_weather_temperature: >-
-        [[[ try {return
-        (states[variables.var_weather_entity].attributes.temperature  + '°');}
-        catch { return  ""}
-
+      var_title: |-
+        [[[ 
+          try 
+          {
+            return states[variables.var_assistsat_entity].attributes.title;
+          } catch { return  ""} 
+        ]]]
+      var_message: |-
+        [[[ 
+          try 
+          {
+            return states[variables.var_assistsat_entity].attributes.message;
+          } catch { return  ""} 
+        ]]]
+      var_image: |-
+        [[[ 
+          try 
+          {
+            return states[variables.var_assistsat_entity].attributes.image;
+          } catch { return  ""} 
+        ]]]
+      var_font_size: |-
+        [[[ 
+          try 
+          {
+            return states[variables.var_assistsat_entity].attributes.message_font_size;
+          }
+          catch { return  ""} 
+        ]]]
+      var_weather_temperature: |-
+        [[[ 
+          try 
+          {
+            return (states[variables.var_weather_entity].attributes.temperature  + '°');
+          }
+          catch { return  ""}
         ]]]      
       var_weather_icon: |-
         [[[
@@ -148,17 +199,20 @@ button_card_templates:
             sunny: "mdi:weather-night",
             partlycloudy: "mdi:weather-night-partly-cloudy",
           };
-          var condition = states[variables.var_weather_entity].state;
-          if (states['sun.sun'] === 'above_horizon') {
-            var weather_icon = weatherIconsDay[condition]; 
-          } else {
-            var weather_icon = weatherIconsDay[condition]; 
-          }
-          
-          if (typeof(weather_icon) === 'undefined') { 
-            var weather_icon = "mdi:help" 
-          }   
-          try {return `${weather_icon}`;} catch { return  ""} 
+          try
+          {
+            var condition = states[variables.var_weather_entity].state;
+            if (states['sun.sun'] === 'above_horizon') {
+              var weather_icon = weatherIconsDay[condition]; 
+            } else {
+              var weather_icon = weatherIconsDay[condition]; 
+            }
+            
+            if (typeof(weather_icon) === 'undefined') { 
+              var weather_icon = "mdi:help" 
+            }   
+            return `${weather_icon}`;
+          } catch { return  ""} 
         ]]]
   body_template:
     show_state: false
@@ -169,19 +223,19 @@ button_card_templates:
       action: call-service
       service: python_script.set_state
       service_data:
-        entity_id: '[[[ return variables.var_assistsat_entity ]]]'
+        entity_id: '[[[ try { return variables.var_assistsat_entity } catch { return  "" }]]]'
         mode: hold
     double_tap_action:
       action: call-service
       service: python_script.set_state
       service_data:
-        entity_id: '[[[ return variables.var_assistsat_entity ]]]'
+        entity_id: '[[[ try { return variables.var_assistsat_entity } catch { return  "" } ]]]'
         mode: normal
     hold_action:
       action: call-service
       service: switch.toggle
       service_data:
-        entity_id: '[[[ return variables.var_mic_switch ]]]'
+        entity_id: '[[[ try { return variables.var_mic_switch } catch { return  "" } ]]]'
     aspect_ratio: 2/1
     styles:
       grid:
@@ -248,9 +302,9 @@ button_card_templates:
           styles:
             grid:
               - grid-template-areas: |
-                  "mediaplayer mic hold dnd washer"
+                  "mediaplayer mic hold dnd"
               - grid-template-rows: min-content
-              - grid-template-columns: 1fr 1fr 1fr 1fr 1fr
+              - grid-template-columns: 1fr 1fr 1fr 1fr
             card:
               - background-color: transparent
               - border-width: 0px
@@ -268,22 +322,21 @@ button_card_templates:
               hold:
                 - position: relative
                 - display: >-
-                    [[[ if
-                    (hass.states[variables.var_assistsat_entity].attributes.mode
-                    === "hold") return "block"; else return "none";
+                    [[[ 
+                      try 
+                      { 
+                        if (hass.states[variables.var_assistsat_entity].attributes.mode === "hold") return "block"; else return "none";
+                      } catch { return "none"}
                     ]]]                
               dnd:
                 - position: relative
                 - display: >-
-                    [[[ if
-                    (hass.states[variables.var_assistsat_entity].attributes.do_not_disturb
-                    === true) return "block"; else return "none";
+                    [[[ 
+                      try
+                      {
+                        if (hass.states[variables.var_assistsat_entity].attributes.do_not_disturb === true) return "block"; else return "none";
+                      } catch { return "none"}                        
                     ]]]                                
-              washer:
-                - position: relative
-                - display: >-
-                    [[[ if (states["input_boolean.washer_attention"].state ==
-                    'on') return "block"; else return "none"; ]]]
           custom_fields:
             mediaplayer:
               card:
@@ -360,31 +413,3 @@ button_card_templates:
                   service_data:
                     do_not_disturb: false
                     entity_id: '[[[ return variables.var_assistsat_entity ]]]'
-            washer:
-              card:
-                type: custom:button-card
-                show_name: true
-                color_type: card
-                styles:
-                  card:
-                    - background-color: transparent
-                    - border-width: 0px
-                name: |
-                  [[[
-                    var last_changed_in_minutes = ((new Date().getTime() - new Date(states["input_boolean.washer_attention"].last_changed).getTime())/60000).toFixed(0);  
-                    var days = Math.floor(last_changed_in_minutes / 1440);
-                    var hours = Math.floor((last_changed_in_minutes - days * 1440) / 60); 
-                    var minutes = last_changed_in_minutes - days * 1440 - hours * 60;
-                    var elapsed = "";
-                    if (last_changed_in_minutes < 1){elapsed = "Wash finished";}
-                    if (last_changed_in_minutes < 60){elapsed = last_changed_in_minutes + " mins";}
-                    if (last_changed_in_minutes >= 60 && last_changed_in_minutes < 1440 ) {elapsed = hours + " hr " + minutes + " min"; }
-                    return `<ha-icon icon="mdi:washing-machine" style="width: 50px; height: 50px; color: white;"></ha-icon><font color="white"><span>${elapsed}</span></font>`;                 
-                  ]]]                
-                tap_action:
-                  action: call-service
-                  service: homeassistant.turn_off
-                  service_data:
-                    entity_id: input_boolean.washer_attention
-views:
-  - title: Home
