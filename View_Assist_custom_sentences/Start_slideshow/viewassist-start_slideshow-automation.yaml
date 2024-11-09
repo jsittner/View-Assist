@@ -1,0 +1,22 @@
+alias: View Assist - Rotate image automation
+description: ""
+triggers:
+  - trigger: time_pattern
+    seconds: /15
+    id: rotateimage
+conditions: []
+actions:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id:
+              - rotateimage
+        sequence:
+          - action: pyscript.select_random_image
+            data: {}
+            response_variable: random_image
+          - data:
+              entity_id: sensor.viewassist_masterbedroom
+              photo_image: "{{ random_image['image_path'] }}"
+            action: python_script.set_state
+mode: single
