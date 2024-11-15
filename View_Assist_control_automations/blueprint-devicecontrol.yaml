@@ -217,6 +217,11 @@ trigger:
   event_data:
     domain: automation
     service: reload
+- id: set_attributes_1min
+  trigger:
+    - platform: time_pattern
+      # You can also match on interval. This will match every 1 minutes
+      minutes: "/1"    
 - platform: state
   entity_id:
   - !input intent
@@ -531,4 +536,35 @@ action:
         data:
           entity_id: "{{ satellite }}"
           status_icons: "{{ icon_list }}"
+  - conditions:
+    - condition: trigger
+      id:
+      - set_attributes_1min
+    sequence:                      
+    sequence:
+      - variables:
+          var_status_icons_size: |-
+            {% set state1 = status_icons_size  %} 
+            {% set state2 = states[satellite].attributes.status_icons_size %} 
+            {% if state1 != state2 %}
+              {% set updated_state = state1 %}
+              {{ updated_state }}
+            {% else %}
+              {{ status_icons_size }}
+            {% endif %}      
+          var_mic_type: |-
+            {% set state1 = mic_type %} 
+            {% set state2 = states[satellite].attributes.mic_type %} 
+            {% if state1 != state2 %}
+              {% set updated_state = state1 %}
+              {{ updated_state }}
+            {% else %}
+              {{ mic_type }}
+            {% endif %}
+      - action: python_script.set_state
+        data:
+          entity_id: "{{ satellite }}"
+          status_icons: "{{ icon_list }}"
+          mic_type: "{{ var_mic_type }}"
+          status_icons_size: "{{ var_status_icons_size }}"          
 mode: parallel
