@@ -218,10 +218,9 @@ trigger:
     domain: automation
     service: reload
 - id: set_attributes_1min
-  trigger:
-    - platform: time_pattern
-      # You can also match on interval. This will match every 1 minutes
-      minutes: "/1"    
+  platform: time_pattern
+  # You can also match on interval. This will match every 1 minutes
+  minutes: "/1"    
 - platform: state
   entity_id:
   - !input intent
