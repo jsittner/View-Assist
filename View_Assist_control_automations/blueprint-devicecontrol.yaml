@@ -563,7 +563,6 @@ action:
       - action: python_script.set_state
         data:
           entity_id: "{{ satellite }}"
-          status_icons: "{{ icon_list }}"
           mic_type: "{{ var_mic_type }}"
           status_icons_size: "{{ var_status_icons_size }}"          
 mode: parallel
