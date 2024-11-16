@@ -392,25 +392,25 @@ action:
           entity_id: !input micdevice                       
     sequence:
     - if:
-        - condition: template
-          value_template: "{{ trigger.event.data.service_data.id == this.attributes.id }}"
+      - condition: template
+        value_template: "{{ trigger.event.data.service_data.id == this.attributes.id }}"
       then:
-        - data:
-            state: clock
-            entity_id: "{{ satellite }}"
-            default_background: "{{ default_background }}"
-            mode: "{{ mode }}"
-            weather_entity: "{{ weather_entity }}"
-            view_timeout: "{{ view_timeout }}"
-            do_not_disturb: "{{ do_not_disturb }}"
-            status_icons: "{{ status_icons }}"
-            assist_prompt: "{{ assist_prompt }}"
-            mic_type: "{{ mic_type }}"
-            status_icons_size: "{{ status_icons_size }}"
-            font_style: "{{ font_style }}"
-            use_24_hour_time: "{{ use_24_hour_time }}"
-          enabled: true
-          action: python_script.set_state
+      - data:
+          state: clock
+          entity_id: "{{ satellite }}"
+          default_background: "{{ default_background }}"
+          mode: "{{ mode }}"
+          weather_entity: "{{ weather_entity }}"
+          view_timeout: "{{ view_timeout }}"
+          do_not_disturb: "{{ do_not_disturb }}"
+          status_icons: "{{ status_icons }}"
+          assist_prompt: "{{ assist_prompt }}"
+          mic_type: "{{ mic_type }}"
+          status_icons_size: "{{ status_icons_size }}"
+          font_style: "{{ font_style }}"
+          use_24_hour_time: "{{ use_24_hour_time }}"
+        enabled: true
+        action: python_script.set_state
       enabled: true
   - conditions:
     - condition: trigger
